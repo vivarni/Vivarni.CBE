@@ -77,8 +77,6 @@ namespace Vivarni.CBE.SqlServer
                     transaction.Rollback();
                     throw;
                 }
-
-                break;
             }
         }
 
