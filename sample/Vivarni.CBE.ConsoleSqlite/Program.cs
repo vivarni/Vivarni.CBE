@@ -2,18 +2,17 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Vivarni.CBE.Sqlite;
-using Vivarni.CBE.SqlServer;
 
 namespace Vivarni.CBE.ConsoleSqlite;
 
 internal class Program
 {
-    static async Task Main(string[] args)
+    public static async Task Main()
     {
-        // Configure Serilog
+        // Configure Serilog for minimal output
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Information()
             .CreateLogger();
 
         try
@@ -25,20 +24,22 @@ internal class Program
 
             var cbeUser = configuration["cbe:login"] ?? string.Empty;
             var cbePassword = configuration["cbe:password"] ?? string.Empty;
-            var sqlServer = configuration.GetConnectionString("sql") ?? string.Empty;
-            var sqlite = configuration.GetConnectionString("sqlite") ?? string.Empty;
+            var connectionString = configuration.GetConnectionString("sqlite") ?? string.Empty;
 
             var serviceProvider = new ServiceCollection()
                 .AddLogging(builder => builder.AddSerilog())
+                .AddSingleton<IConfiguration>(configuration)
+                .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
-                    .WithSqliteDatabase(sqlite)
+                    .WithSqliteDatabase(connectionString)
                     .WithFileSystemSource("c:/temp/kbo-files"))
                 .BuildServiceProvider();
 
-            Log.Information("Starting CBE synchronization");
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
+            var demo = serviceProvider.GetRequiredService<SearchDemo>();
+
             await cbe.Sync();
-            Log.Information("CBE synchronization completed");
+            await demo.Run();
         }
         catch (Exception ex)
         {
