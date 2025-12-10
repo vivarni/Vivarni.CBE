@@ -8,19 +8,19 @@ Want to experiment without your own DB? See the sample projects in `sample/`. It
 
 ## Features ✨
 
-- Data Sources: file system and HTTP providers for CBE Open Data.
-- Storage Backends: interfaces and implementations for relational DBs (SQL Server, Sqlite).
-- Easy extensibility to other database types via the `ICbeDataStorage` interface.
-- Schema & Entities: strongly-typed `Entities` with mappings and descriptors.
-- Synchronization State: import tracking via `ICbeSynchronisationStateRegistry` implementations.
-- A sample application showing end-to-end flow. 🖥️
+- 📂 Data Sources: file system and HTTP providers for CBE Open Data.
+- 🗄️ Storage Backends: interfaces and implementations for relational DBs (SQL Server, Sqlite).
+- 🧩 Easy extensibility to other database types via the `ICbeDataStorage` interface.
+- 🧬 Schema & Entities: strongly-typed `Entities` with mappings and descriptors.
+- 🔄 Synchronization State: import tracking via `ICbeSynchronisationStateRegistry` implementations.
+- 🖥️ A sample application showing end-to-end flow.
 
-## Quickstart 🏁
+## Quickstart 🚀
 
-### 1) Get the data 📥
+### 1. Get the data
 Create an account on the [official CBE website](https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data). With username/password you can download the public open data.
 
-### 2) Install via NuGet 📦
+### 2. Install via NuGet
 Consume the package from your own solution via NuGet.
 
 ```bash
@@ -28,12 +28,11 @@ dotnet add package Vivarni.CBE
 dotnet add package Vivarni.CBE.SqlServer
 ```
 
-### 3) Example (Sqlite) 🗄️
+### 3. Example (Sqlite)
 
 Configure services and run a sync. Adjust connection string, schema, and source for your environment. You can then
 
 ```csharp
-using Dapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Vivarni.CBE;
@@ -47,14 +46,19 @@ var services = new ServiceCollection()
         .WithSqliteDatabase(connectionString)
         .WithHttpSource("cbe-username", "MySecret")
     );
-
+```
+### 4. Import CBE/KBO/BCE data to your local database
+Only a single commant to trigger an update/import of your data. This will use partial updates when possible and use the `ICbeSynchronisationStateRegistry` to keep track of which files have been imported. The CBE publishes partial update files on a daily basis. Support for automatic synchronisation via the configuration above is in development.
+```csharp
 var provider = services.BuildServiceProvider();
 var cbeService = provider.GetRequiredService<ICbeService>();
-
-// Trigger a manual import/sync
 await cbeService.SyncAsync();
+```
 
-// Query your local copy of the CBE database
+### 5. Query the data
+```csharp
+using Dapper;
+
 using var connection = new SqliteConnection(connectionString);
 await connection.OpenAsync();
 
@@ -69,6 +73,6 @@ foreach (var row in companies)
 }
 ```
 
-## License 📄
+## License
 
 This project is licensed under the MIT License. Feel free to use it in your projects.
