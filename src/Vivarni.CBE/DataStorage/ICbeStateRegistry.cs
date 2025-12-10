@@ -2,7 +2,7 @@
 
 namespace Vivarni.CBE.DataStorage;
 
-internal interface ICbeSynchronisationStateRegistry
+public interface ICbeStateRegistry
 {
     Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken);
     Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken);

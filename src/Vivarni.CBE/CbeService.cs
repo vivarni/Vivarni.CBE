@@ -22,7 +22,7 @@ internal class CbeService : ICbeService
 {
     private const int INSERT_BATCH_SIZE = 100_000;
 
-    private readonly ICbeSynchronisationStateRegistry _applicationStateRepository;
+    private readonly ICbeStateRegistry _applicationStateRepository;
     private readonly ICbeDataStorage _storage;
     private readonly ICbeDataSource _source;
     private readonly ILogger _logger;
@@ -30,7 +30,7 @@ internal class CbeService : ICbeService
     public CbeService(
         ILogger<CbeService> logger,
         ICbeDataSource openDataProvider,
-        ICbeSynchronisationStateRegistry applicationStateRepository,
+        ICbeStateRegistry applicationStateRepository,
         ICbeDataStorage database)
     {
         _logger = logger;
@@ -41,14 +41,15 @@ internal class CbeService : ICbeService
 
     public async Task Sync(CancellationToken cancellationToken = default)
     {
+        // Make sure the storage is ready to receive data.
+        await _storage.InitializeAsync(cancellationToken);
+
+        // Fetch some data in order to determine the current synchronisation state
         var processedFiles = (await _applicationStateRepository.GetProcessedFiles(cancellationToken)).ToList();
         var onlineFiles = await _source.GetOpenDataFilesAsync(cancellationToken);
 
         var highestProcessedNumber = processedFiles.Select(s => s.Number).Union([-1]).Max();
         var highestOnlineNumber = onlineFiles.Max(s => s.Number);
-
-        // Make sure the storage is ready to receive data.
-        await _storage.InitializeAsync();
 
         // Sorteer online bestanden op nummer (ascending)
         var sortedOnlineFiles = onlineFiles.OrderBy(f => f.Number).ToList();

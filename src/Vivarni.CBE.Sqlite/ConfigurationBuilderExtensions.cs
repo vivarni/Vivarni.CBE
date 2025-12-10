@@ -13,6 +13,12 @@ public static class ConfigurationBuilderExtensions
             return new SqliteCbeDataStorage(logger, connectionString);
         };
 
+        builder.SynchronisationStateRegistryFactory = (s) =>
+        {
+            var logger = s.GetRequiredService<ILogger<SqliteCbeDataStorage>>();
+            return new SqliteCbeDataStorage(logger, connectionString);
+        };
+
         return builder;
     }
 }

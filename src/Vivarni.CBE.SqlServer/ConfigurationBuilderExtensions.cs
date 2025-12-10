@@ -14,6 +14,13 @@ public static class ConfigurationBuilderExtensions
             return storage;
         };
 
+        builder.SynchronisationStateRegistryFactory = (s) =>
+        {
+            var logger = s.GetRequiredService<ILogger<SqlServerCbeDataStorage>>();
+            var storage = new SqlServerCbeDataStorage(logger, connectionString, schema, tablePrefix);
+            return storage;
+        };
+
         return builder;
     }
 }

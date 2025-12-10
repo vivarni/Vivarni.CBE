@@ -18,8 +18,11 @@ public static class ServiceCollectionExtensions
         if (options.DataSourceFactory == null)
             throw new InvalidOperationException("Vivarni CBE: Missing data source configuration.");
 
-        services.AddScoped<ICbeSynchronisationStateRegistry, SimpleStateRegistry>();
+        if (options.SynchronisationStateRegistryFactory == null)
+            throw new InvalidOperationException("Vivarni CBE: Missing data source configuration.");
+
         services.AddScoped<ICbeService, CbeService>();
+        services.AddScoped<ICbeStateRegistry>(s => options.SynchronisationStateRegistryFactory(s));
         services.AddScoped<ICbeDataStorage>(s => options.DataStorageFactory(s));
         services.AddScoped<ICbeDataSource>(s => options.DataSourceFactory(s));
 
@@ -31,6 +34,7 @@ public class VivarniCbeOptions
 {
     public Func<IServiceProvider, ICbeDataStorage>? DataStorageFactory { get; set; }
     public Func<IServiceProvider, ICbeDataSource>? DataSourceFactory { get; set; }
+    public Func<IServiceProvider, ICbeStateRegistry>? SynchronisationStateRegistryFactory { get; set; }
 
     public VivarniCbeOptions WithHttpSource(string userName, string password)
     {

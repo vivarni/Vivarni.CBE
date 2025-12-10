@@ -2,6 +2,7 @@
 using System.Data;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataAnnotations;
@@ -11,7 +12,9 @@ using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.SqlServer
 {
-    internal class SqlServerCbeDataStorage : ICbeDataStorage
+    internal class SqlServerCbeDataStorage
+        : ICbeDataStorage
+        , ICbeStateRegistry
     {
         private const int INSERT_BATCH_SIZE = 100_000;
 
@@ -149,6 +152,16 @@ namespace Vivarni.CBE.SqlServer
                 sb.AppendLine("END\n\n");
             }
 
+            // Create state registry table
+            var stateTableName = _tablePrefix + "StateRegistry";
+            sb.AppendLine($"IF OBJECT_ID('{_schema}.{stateTableName}', 'U') IS NULL");
+            sb.AppendLine("BEGIN");
+            sb.AppendLine($"CREATE TABLE [{_schema}].[{stateTableName}] (");
+            sb.AppendLine($"    [Variable] NVARCHAR(100) NOT NULL PRIMARY KEY,");
+            sb.AppendLine($"    [Value] NVARCHAR(MAX) NULL");
+            sb.AppendLine(")");
+            sb.AppendLine("END\n\n");
+
             return sb.ToString();
         }
 
@@ -260,6 +273,65 @@ namespace Vivarni.CBE.SqlServer
 
             // Last resort
             return value;
+        }
+
+        public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)
+        {
+            const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
+            var tableName = $"[{_schema}].[{_tablePrefix}StateRegistry]";
+            
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync(cancellationToken);
+            using var command = conn.CreateCommand();
+
+            command.CommandText = $"SELECT [Value] FROM {tableName} WHERE [Variable] = @Variable";
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@Variable";
+            parameter.Value = SYNC_PROCESSED_FILES_VARIABLE;
+            command.Parameters.Add(parameter);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken) as string;
+
+            if (string.IsNullOrEmpty(result))
+            {
+                return Enumerable.Empty<CbeOpenDataFile>();
+            }
+
+            var list = JsonSerializer.Deserialize<List<string>>(result) ?? [];
+            return list.Select(s => new CbeOpenDataFile(s));
+        }
+
+        public async Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken)
+        {
+            const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
+            var tableName = $"[{_schema}].[{_tablePrefix}StateRegistry]";
+            
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync(cancellationToken);
+
+            var data = processedFiles.Select(s => s.Filename);
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+
+            const string upsertQuery = @"
+                IF EXISTS (SELECT 1 FROM {0} WHERE [Variable] = @Variable)
+                    UPDATE {0} SET [Value] = @Value WHERE [Variable] = @Variable
+                ELSE
+                    INSERT INTO {0} ([Variable], [Value]) VALUES (@Variable, @Value)";
+
+            using var command = conn.CreateCommand();
+            command.CommandText = string.Format(upsertQuery, tableName);
+
+            var variableParam = command.CreateParameter();
+            variableParam.ParameterName = "@Variable";
+            variableParam.Value = SYNC_PROCESSED_FILES_VARIABLE;
+            command.Parameters.Add(variableParam);
+
+            var valueParam = command.CreateParameter();
+            valueParam.ParameterName = "@Value";
+            valueParam.Value = json;
+            command.Parameters.Add(valueParam);
+
+            await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
 }

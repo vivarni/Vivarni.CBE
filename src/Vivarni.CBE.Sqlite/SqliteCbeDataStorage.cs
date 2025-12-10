@@ -2,6 +2,7 @@
 using System.Data;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataAnnotations;
@@ -11,7 +12,9 @@ using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.Sqlite
 {
-    internal class SqliteCbeDataStorage : ICbeDataStorage
+    internal class SqliteCbeDataStorage
+        : ICbeDataStorage
+        , ICbeStateRegistry
     {
         private const int INSERT_BATCH_SIZE = 250_000;
 
@@ -175,6 +178,13 @@ namespace Vivarni.CBE.Sqlite
                 sb.AppendLine();
             }
 
+            // Create state registry table
+            sb.AppendLine("CREATE TABLE IF NOT EXISTS \"StateRegistry\" (");
+            sb.AppendLine("    \"Variable\" TEXT PRIMARY KEY NOT NULL,");
+            sb.AppendLine("    \"Value\" TEXT");
+            sb.AppendLine(");");
+            sb.AppendLine();
+
             return sb.ToString();
         }
 
@@ -220,6 +230,63 @@ namespace Vivarni.CBE.Sqlite
 
             var safe = identifier.Replace("\"", "\"\"");
             return $"\"{safe}\"";
+        }
+
+        public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)
+        {
+            const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
+
+            using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync(cancellationToken);
+            using var command = conn.CreateCommand();
+
+            command.CommandText = "SELECT \"Value\" FROM \"StateRegistry\" WHERE \"Variable\" = @Variable";
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@Variable";
+            parameter.Value = SYNC_PROCESSED_FILES_VARIABLE;
+            command.Parameters.Add(parameter);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken) as string;
+
+            if (string.IsNullOrEmpty(result))
+            {
+                return Enumerable.Empty<CbeOpenDataFile>();
+            }
+
+            var list = JsonSerializer.Deserialize<List<string>>(result) ?? [];
+            return list.Select(s => new CbeOpenDataFile(s));
+        }
+
+        public async Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken)
+        {
+            const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
+
+            using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync(cancellationToken);
+
+            var data = processedFiles.Select(s => s.Filename);
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+
+            const string upsertQuery = @"
+                INSERT INTO ""StateRegistry""(""Variable"", ""Value"")
+                VALUES(@Variable, @Value)
+                ON CONFLICT(""Variable"")
+                DO UPDATE SET ""Value"" = excluded.""Value""";
+
+            using var command = conn.CreateCommand();
+            command.CommandText = upsertQuery;
+
+            var variableParam = command.CreateParameter();
+            variableParam.ParameterName = "@Variable";
+            variableParam.Value = SYNC_PROCESSED_FILES_VARIABLE;
+            command.Parameters.Add(variableParam);
+
+            var valueParam = command.CreateParameter();
+            valueParam.ParameterName = "@Value";
+            valueParam.Value = json;
+            command.Parameters.Add(valueParam);
+
+            await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
 }
