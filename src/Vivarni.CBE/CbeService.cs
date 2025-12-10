@@ -51,7 +51,7 @@ internal class CbeService : ICbeService
         var highestProcessedNumber = processedFiles.Select(s => s.Number).Union([-1]).Max();
         var highestOnlineNumber = onlineFiles.Max(s => s.Number);
 
-        // Sorteer online bestanden op nummer (ascending)
+        // Sort online files by number (ascending)
         var sortedOnlineFiles = onlineFiles.OrderBy(f => f.Number).ToList();
 
         // Execute a FULL import if we've never done it before
