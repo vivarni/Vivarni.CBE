@@ -32,7 +32,7 @@ internal class Program
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
                     .WithSqliteDatabase(connectionString)
-                    .WithFileSystemSource("c:/temp/kbo-files"))
+                    .WithFileSystemCache("c:/temp/kbo-files"))
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
