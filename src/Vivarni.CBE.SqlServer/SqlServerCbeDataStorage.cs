@@ -131,6 +131,8 @@ namespace Vivarni.CBE.SqlServer
             sb.AppendLine($"END");
             sb.Append("\n\n");
 
+            var indexStatements = new List<string>();
+
             foreach (var type in types)
             {
                 var tableName = _tablePrefix + type.Name;
@@ -145,11 +147,28 @@ namespace Vivarni.CBE.SqlServer
                     var columnName = _tablePrefix + prop.Name;
                     var sqlType = GetSqlType(prop);
                     sb.AppendLine($"    [{columnName}] {sqlType},");
+
+                    // Check for IndexColumn attribute and collect index statements
+                    if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                    {
+                        var indexName = $"IX_{type.Name}_{prop.Name}";
+                        var indexStatement = $"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = '{indexName}' AND object_id = OBJECT_ID('[{_schema}].[{tableName}]'))\n" +
+                                            $"    CREATE INDEX [{indexName}] ON [{_schema}].[{tableName}] ([{columnName}]);";
+                        indexStatements.Add(indexStatement);
+                    }
                 }
 
 
                 sb.AppendLine(")");
                 sb.AppendLine("END\n\n");
+            }
+
+            // Add all index statements after table creation
+            if (indexStatements.Count > 0)
+            {
+                sb.AppendLine("-- Create indexes");
+                sb.AppendLine(string.Join("\n\n", indexStatements));
+                sb.AppendLine();
             }
 
             // Create state registry table

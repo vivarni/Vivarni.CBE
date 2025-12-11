@@ -157,6 +157,7 @@ namespace Vivarni.CBE.Sqlite
                 .Where(t => t.GetInterfaces().Contains(typeof(ICbeEntity)) && t.IsClass);
 
             var sb = new StringBuilder();
+            var indexStatements = new List<string>();
 
             foreach (var type in types)
             {
@@ -171,10 +172,26 @@ namespace Vivarni.CBE.Sqlite
                     var columnName = prop.Name;
                     var sqlType = GetSqliteType(prop);
                     columnDefinitions.Add($"    {QuoteIdentifier(columnName)} {sqlType}");
+
+                    // Check for IndexColumn attribute and collect index statements
+                    if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                    {
+                        var indexName = $"IX_{type.Name}_{prop.Name}";
+                        var indexStatement = $"CREATE INDEX IF NOT EXISTS {QuoteIdentifier(indexName)} ON {QuoteIdentifier(tableName)} ({QuoteIdentifier(columnName)});";
+                        indexStatements.Add(indexStatement);
+                    }
                 }
 
                 sb.AppendLine(string.Join(",\n", columnDefinitions));
                 sb.AppendLine(");");
+                sb.AppendLine();
+            }
+
+            // Add all index statements after table creation
+            if (indexStatements.Count > 0)
+            {
+                sb.AppendLine("-- Create indexes");
+                sb.AppendLine(string.Join("\n", indexStatements));
                 sb.AppendLine();
             }
 
