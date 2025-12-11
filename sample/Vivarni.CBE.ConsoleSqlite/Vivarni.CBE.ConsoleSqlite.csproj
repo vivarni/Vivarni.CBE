@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vivarni.CBE.Sqlite\Vivarni.CBE.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\Vivarni.CBE.SqlServer\Vivarni.CBE.SqlServer.csproj" />
+    <ProjectReference Include="..\..\src\Vivarni.CBE.Postgres\Vivarni.CBE.Postgres.csproj" />
     <ProjectReference Include="..\..\src\Vivarni.CBE\Vivarni.CBE.csproj" />
   </ItemGroup>
 

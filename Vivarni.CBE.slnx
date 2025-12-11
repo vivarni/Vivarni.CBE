@@ -2,6 +2,7 @@
   <Folder Name="/samples/">
     <Project Path="sample/Vivarni.CBE.ConsoleSqlite/Vivarni.CBE.ConsoleSqlite.csproj" />
   </Folder>
+  <Project Path="src/Vivarni.CBE.Postgres/Vivarni.CBE.Postgres.csproj" />
   <Project Path="src/Vivarni.CBE.Sqlite/Vivarni.CBE.Sqlite.csproj" Id="3f1bdeff-944d-4383-b6e9-393e6e60e937" />
   <Project Path="src/Vivarni.CBE.SqlServer/Vivarni.CBE.SqlServer.csproj" />
   <Project Path="src/Vivarni.CBE/Vivarni.CBE.csproj" Id="c1a59d66-6f79-4e3b-9b53-3b7c7f6c9e21" />

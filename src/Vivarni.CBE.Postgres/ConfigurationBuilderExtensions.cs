@@ -1,0 +1,26 @@
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace Vivarni.CBE.Postgres;
+
+public static class ConfigurationBuilderExtensions
+{
+    public static VivarniCbeOptions WithPostgres(this VivarniCbeOptions builder, string connectionString, string schema = "dbo", string tablePrefix = "")
+    {
+        builder.DataStorageFactory = (s) =>
+        {
+            var logger = s.GetRequiredService<ILogger<PostgresCbeDataStorage>>();
+            var storage = new PostgresCbeDataStorage(logger, connectionString, schema, tablePrefix);
+            return storage;
+        };
+
+        builder.SynchronisationStateRegistryFactory = (s) =>
+        {
+            var logger = s.GetRequiredService<ILogger<PostgresCbeDataStorage>>();
+            var storage = new PostgresCbeDataStorage(logger, connectionString, schema, tablePrefix);
+            return storage;
+        };
+
+        return builder;
+    }
+}

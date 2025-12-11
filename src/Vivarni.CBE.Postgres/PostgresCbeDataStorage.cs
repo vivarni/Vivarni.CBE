@@ -1,0 +1,369 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.Data;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Npgsql;
+using NpgsqlTypes;
+using Microsoft.Extensions.Logging;
+using Vivarni.CBE.DataAnnotations;
+using Vivarni.CBE.DataSources;
+using Vivarni.CBE.DataStorage;
+using Vivarni.CBE.Util;
+
+namespace Vivarni.CBE.Postgres
+{
+    internal class PostgresCbeDataStorage
+        : ICbeDataStorage
+        , ICbeStateRegistry
+    {
+        private const int INSERT_BATCH_SIZE = 250_000;
+
+        private readonly string _connectionString;
+        private readonly string _schema;
+        private readonly string _tablePrefix;
+        private readonly ILogger _logger;
+
+        public PostgresCbeDataStorage(ILogger<PostgresCbeDataStorage> logger, string connectionString, string schema, string tablePrefix)
+        {
+            _logger = logger;
+            _connectionString = connectionString;
+            _schema = schema;
+            _tablePrefix = tablePrefix;
+        }
+
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
+        {
+            var sql = GenerateInitialisationSqlScript();
+
+            using var conn = new NpgsqlConnection(_connectionString);
+            using var command = conn.CreateCommand();
+
+            command.CommandText = sql;
+            command.CommandType = CommandType.Text;
+
+            await conn.OpenAsync(cancellationToken);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            _logger.LogDebug("Executed initialisation SQL script");
+        }
+
+        public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+            where T : ICbeEntity
+        {
+            var totalImportCount = 0;
+            var tableName = $"\"{_schema}\".\"{_tablePrefix + typeof(T).Name}\"";
+
+            // Pre-compile property accessors for better performance
+            var properties = typeof(T).GetProperties();
+            var columnNames = properties.Select(p => $"\"{p.Name}\"").ToList();
+            var copyCommand = $"COPY {tableName} ({string.Join(", ", columnNames)}) FROM STDIN (FORMAT BINARY)";
+
+            // Use a single connection for all batches to avoid connection overhead
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+
+            // Process in streaming fashion to avoid loading all data into memory
+            foreach (var batch in entities.Batch(INSERT_BATCH_SIZE))
+            {
+                var batchList = batch.ToList();
+                if (batchList.Count <= 0)
+                    continue;
+
+                using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+                NpgsqlBinaryImporter? writer = null;
+
+                try
+                {
+                    writer = await connection.BeginBinaryImportAsync(copyCommand, cancellationToken);
+
+                    // Use synchronous operations for better performance in tight loops
+                    foreach (var entity in batchList)
+                    {
+                        writer.StartRow();
+                        foreach (var prop in properties)
+                        {
+                            var value = prop.GetValue(entity);
+                            writer.Write(value ?? DBNull.Value);
+                        }
+                    }
+
+                    // Complete and dispose the writer to exit COPY mode before committing
+                    await writer.CompleteAsync(cancellationToken);
+                    await writer.DisposeAsync();
+                    writer = null; // Mark as disposed to prevent double disposal in catch block
+
+                    await transaction.CommitAsync(cancellationToken);
+
+                    totalImportCount += batchList.Count;
+                    _logger.LogDebug("Imported {TotalImportCount:N0} records into {TableName}", totalImportCount, tableName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to import records into {TableName}", tableName);
+
+                    // If the writer is still active, we need to cancel it to exit COPY mode
+                    if (writer != null)
+                    {
+                        try
+                        {
+                            // Cancel the COPY operation to exit COPY mode
+                            await writer.DisposeAsync();
+                        }
+                        catch (Exception cancelEx)
+                        {
+                            _logger.LogWarning(cancelEx, "Failed to dispose COPY operation");
+                        }
+                    }
+
+                    await transaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            }
+        }
+
+        private string GetSqlType(PropertyInfo prop)
+        {
+            var maxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
+            var propertyType = prop.PropertyType;
+
+            // Handle nullable types
+            var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+            var isNullable = Nullable.GetUnderlyingType(propertyType) != null || !propertyType.IsValueType;
+
+            var sqlType = underlyingType.Name switch
+            {
+                nameof(String) => maxLength.HasValue ? $"VARCHAR({maxLength})" : "TEXT",
+                nameof(DateTime) => "TIMESTAMP",
+                nameof(Int32) => "INTEGER",
+                nameof(Int64) => "BIGINT",
+                nameof(Byte) => "SMALLINT",
+                nameof(Boolean) => "BOOLEAN",
+                nameof(Decimal) => "DECIMAL(18,2)",
+                nameof(Double) => "DOUBLE PRECISION",
+                nameof(DateOnly) => "DATE",
+                nameof(Guid) => "UUID",
+                _ => "TEXT" // Default fallback
+            };
+
+            var primaryKeySuffix = prop.GetCustomAttribute<PrimaryKeyColumn>() != null
+                ? " PRIMARY KEY"
+                : "";
+            var nullSuffix = isNullable && propertyType.IsValueType && Nullable.GetUnderlyingType(propertyType) != null
+                ? " NULL"
+                : " NOT NULL";
+
+            return $"{sqlType}{nullSuffix}{primaryKeySuffix}";
+        }
+
+        protected string GenerateInitialisationSqlScript()
+        {
+            var types = typeof(ICbeEntity)
+                .Assembly
+                .GetTypes()
+                .Where(t => t.GetInterfaces().Contains(typeof(ICbeEntity)) && t.IsClass);
+
+            var sb = new StringBuilder();
+
+            // Create schema if it doesn't exist
+            sb.AppendLine($"CREATE SCHEMA IF NOT EXISTS \"{_schema}\";");
+            sb.Append("\n\n");
+
+            foreach (var type in types)
+            {
+                var tableName = _tablePrefix + type.Name;
+                var properties = type.GetProperties();
+                var columns = new List<string>();
+
+                sb.AppendLine($"CREATE TABLE IF NOT EXISTS \"{_schema}\".\"{tableName}\" (");
+
+                var columnDefinitions = new List<string>();
+                foreach (var prop in properties)
+                {
+                    var columnName = _tablePrefix + prop.Name;
+                    var sqlType = GetSqlType(prop);
+                    columnDefinitions.Add($"    \"{columnName}\" {sqlType}");
+                }
+
+                sb.AppendLine(string.Join(",\n", columnDefinitions));
+                sb.AppendLine(");\n");
+            }
+
+            // Create state registry table
+            var stateTableName = _tablePrefix + "StateRegistry";
+            sb.AppendLine($"CREATE TABLE IF NOT EXISTS \"{_schema}\".\"{stateTableName}\" (");
+            sb.AppendLine($"    \"Variable\" VARCHAR(100) NOT NULL PRIMARY KEY,");
+            sb.AppendLine($"    \"Value\" TEXT NULL");
+            sb.AppendLine(");\n");
+
+            return sb.ToString();
+        }
+
+        public async Task ClearAsync<T>(CancellationToken cancellationToken)
+            where T : ICbeEntity
+        {
+            var tableName = $"\"{_schema}\".\"{_tablePrefix + typeof(T).Name}\"";
+            using var conn = new NpgsqlConnection(_connectionString);
+            using var command = conn.CreateCommand();
+
+            command.CommandText = $"TRUNCATE TABLE " + tableName;
+            command.CommandType = CommandType.Text;
+
+            await conn.OpenAsync(cancellationToken);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+
+            _logger.LogDebug("Truncated {TableName}", tableName);
+        }
+
+        public async Task<int> RemoveAsync<T>(
+            IEnumerable<object> entityIds,
+            PropertyInfo deleteOnProperty,
+            CancellationToken cancellationToken = default)
+            where T : ICbeEntity
+        {
+            // 1) Materialize IDs and short-circuit if empty
+            var ids = entityIds?.ToList() ?? new List<object>();
+            if (ids.Count == 0)
+                return 0;
+
+            // 2) Prepare safe identifiers
+            var tableName = _tablePrefix + typeof(T).Name;
+            var quotedSchema = QuoteIdentifier(_schema);          // "schema"
+            var quotedTable = QuoteIdentifier(tableName);        // "prefixTypeName"
+            var quotedColumn = QuoteIdentifier(deleteOnProperty.Name);
+
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync(cancellationToken);
+            await using var command = conn.CreateCommand();
+
+            // 3) Create one parameter per ID
+            var paramNames = new string[ids.Count];
+            for (int i = 0; i < ids.Count; i++)
+            {
+                var pName = $"@p{i}";
+                paramNames[i] = pName;
+
+                var p = new NpgsqlParameter
+                {
+                    ParameterName = pName,
+                    Value = CoerceId(ids[i], deleteOnProperty.PropertyType)
+                };
+                command.Parameters.Add(p);
+            }
+
+            command.CommandType = CommandType.Text;
+            command.CommandText =
+                $"DELETE FROM {quotedSchema}.{quotedTable} WHERE {quotedColumn} IN ({string.Join(",", paramNames)})";
+
+            var affected = await command.ExecuteNonQueryAsync(cancellationToken);
+            _logger.LogDebug("Deleted {AffectedRows} records from {TableName}", affected, $"{quotedSchema}.{quotedTable}");
+            return affected;
+        }
+
+        private static string QuoteIdentifier(string identifier)
+        {
+            if (string.IsNullOrWhiteSpace(identifier))
+                throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));
+            // Wrap in " " and escape any embedded " by doubling it: "" (PostgreSQL identifier escaping)
+            return "\"" + identifier.Replace("\"", "\"\"") + "\"";
+        }
+
+        private static object CoerceId(object value, Type targetType)
+        {
+            if (value == null) return DBNull.Value;
+            var nonNullType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+            // If already assignable, return as-is
+            if (nonNullType.IsInstanceOfType(value))
+                return value;
+
+            // Handle common conversions (string -> Guid/int/long, etc.)
+            if (nonNullType == typeof(Guid))
+                return value is Guid g ? g : Guid.Parse(value.ToString());
+
+            if (nonNullType == typeof(int))
+                return value is int i ? i : Convert.ToInt32(value);
+
+            if (nonNullType == typeof(long))
+                return value is long l ? l : Convert.ToInt64(value);
+
+            if (nonNullType == typeof(short))
+                return value is short s ? s : Convert.ToInt16(value);
+
+            if (nonNullType == typeof(byte))
+                return value is byte b ? b : Convert.ToByte(value);
+
+            if (nonNullType == typeof(decimal))
+                return value is decimal d ? d : Convert.ToDecimal(value);
+
+            if (nonNullType == typeof(bool))
+                return value is bool bb ? bb : Convert.ToBoolean(value);
+
+            if (nonNullType == typeof(DateTime))
+                return value is DateTime dt ? dt : Convert.ToDateTime(value);
+
+            if (nonNullType == typeof(string))
+                return value.ToString();
+
+            // Last resort
+            return value;
+        }
+
+        public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)
+        {
+            const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
+            var tableName = $"\"{_schema}\".\"{_tablePrefix}StateRegistry\"";
+
+            using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync(cancellationToken);
+            using var command = conn.CreateCommand();
+
+            command.CommandText = $"SELECT \"Value\" FROM {tableName} WHERE \"Variable\" = @Variable";
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@Variable";
+            parameter.Value = SYNC_PROCESSED_FILES_VARIABLE;
+            command.Parameters.Add(parameter);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken) as string;
+
+            if (string.IsNullOrEmpty(result))
+            {
+                return Enumerable.Empty<CbeOpenDataFile>();
+            }
+
+            var list = JsonSerializer.Deserialize<List<string>>(result) ?? [];
+            return list.Select(s => new CbeOpenDataFile(s));
+        }
+
+        public async Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken)
+        {
+            const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
+            var tableName = $"\"{_schema}\".\"{_tablePrefix}StateRegistry\"";
+
+            using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync(cancellationToken);
+
+            var data = processedFiles.Select(s => s.Filename);
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+
+            const string upsertQuery = @"
+                INSERT INTO {0} (""Variable"", ""Value"") VALUES (@Variable, @Value)
+                ON CONFLICT (""Variable"")
+                DO UPDATE SET ""Value"" = EXCLUDED.""Value""";
+
+            using var command = conn.CreateCommand();
+            command.CommandText = string.Format(upsertQuery, tableName);
+
+            var variableParam = command.CreateParameter();
+            variableParam.ParameterName = "@Variable";
+            variableParam.Value = SYNC_PROCESSED_FILES_VARIABLE;
+            command.Parameters.Add(variableParam);
+
+            var valueParam = command.CreateParameter();
+            valueParam.ParameterName = "@Value";
+            valueParam.Value = json;
+            command.Parameters.Add(valueParam);
+
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+    }
+}
