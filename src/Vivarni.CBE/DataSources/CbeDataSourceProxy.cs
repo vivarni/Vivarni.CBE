@@ -32,12 +32,12 @@ internal class CbeDataSourceProxy : ICbeDataSource
         return [.. result];
     }
 
-    public Task<Stream> ReadAsync(CbeOpenDataFile file, CancellationToken cancellationToken)
+    public async Task<Stream> ReadAsync(CbeOpenDataFile file, CancellationToken cancellationToken)
     {
         var exceptions = new List<Exception>();
 
-        try { if (_cache != null) return _cache.ReadAsync(file, cancellationToken); } catch (Exception ex) { exceptions.Add(ex); }
-        try { if (_source != null) return _source.ReadAsync(file, cancellationToken); } catch (Exception ex) { exceptions.Add(ex); }
+        try { if (_cache != null) return await _cache.ReadAsync(file, cancellationToken); } catch (Exception ex) { exceptions.Add(ex); }
+        try { if (_source != null) return await _source.ReadAsync(file, cancellationToken); } catch (Exception ex) { exceptions.Add(ex); }
 
         throw new AggregateException("Failed to read the OpenDataFile. See inner exceptions for more details.", exceptions);
     }

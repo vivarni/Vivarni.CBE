@@ -214,8 +214,7 @@ public class CbeDataSourceProxyTests
         Assert.Equal(2, aggregateException.InnerExceptions.Count);
         Assert.Contains(cacheException, aggregateException.InnerExceptions);
         Assert.Contains(sourceException, aggregateException.InnerExceptions);
-        Assert.Equal("Failed to read the OpenDataFile. See inner exceptions for more details.", 
-            aggregateException.Message);
+        Assert.StartsWith("Failed to read the OpenDataFile. See inner exceptions for more details.", aggregateException.Message);
     }
 
     #endregion
