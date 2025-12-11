@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
             throw new InvalidOperationException("Vivarni CBE: Missing data storage configuration.");
 
         if (options.DataSourceFactory == null && options.DataSourceCacheFactory == null)
-            throw new InvalidOperationException("Vivarni CBE: .");//TODO
+            throw new InvalidOperationException("Vivarni CBE: Missing data source and data source cache configuration. At least one of DataSourceFactory or DataSourceCacheFactory must be provided.");
 
         if (options.SynchronisationStateRegistryFactory == null)
             throw new InvalidOperationException("Vivarni CBE: Missing data source configuration.");
