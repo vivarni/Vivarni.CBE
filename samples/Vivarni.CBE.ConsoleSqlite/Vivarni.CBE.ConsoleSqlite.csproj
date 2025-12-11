@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
@@ -20,8 +19,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vivarni.CBE.Sqlite\Vivarni.CBE.Sqlite.csproj" />
-    <ProjectReference Include="..\..\src\Vivarni.CBE.SqlServer\Vivarni.CBE.SqlServer.csproj" />
-    <ProjectReference Include="..\..\src\Vivarni.CBE.Postgres\Vivarni.CBE.Postgres.csproj" />
     <ProjectReference Include="..\..\src\Vivarni.CBE\Vivarni.CBE.csproj" />
   </ItemGroup>
 

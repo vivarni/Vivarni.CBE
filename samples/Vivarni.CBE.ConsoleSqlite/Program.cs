@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using Vivarni.CBE.Sqlite;
+using Vivarni.CBE.Sqlite.Setup;
 
 namespace Vivarni.CBE.ConsoleSqlite;
 

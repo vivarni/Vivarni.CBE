@@ -1,8 +1,8 @@
 ﻿using System.Text;
 
-namespace Vivarni.CBE.Postgres;
+namespace Vivarni.CBE.Postgres.DDL;
 
-internal class DatabaseObjectNameProvider
+internal class PostgresDatabaseObjectNameProvider
 {
     // Minimal reserved keywords set—expand for your domain, or leave empty and enforce naming rules upstream.
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)

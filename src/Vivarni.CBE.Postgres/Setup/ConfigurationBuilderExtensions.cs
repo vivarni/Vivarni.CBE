@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Vivarni.CBE.Postgres;
+namespace Vivarni.CBE.Postgres.Setup;
 
 public static class ConfigurationBuilderExtensions
 {
