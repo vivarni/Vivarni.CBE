@@ -4,11 +4,11 @@ using Xunit;
 
 namespace Vivarni.CBE.Sqlite.Test;
 
-public class DatabaseInitialisationTests : IClassFixture<SqliteTestFixture>
+public class SqliteDatabaseInitialisationTests : IClassFixture<SqliteTestFixture>
 {
     private readonly SqliteTestFixture _fixture;
 
-    public DatabaseInitialisationTests(SqliteTestFixture fixture)
+    public SqliteDatabaseInitialisationTests(SqliteTestFixture fixture)
     {
         _fixture = fixture;
     }

@@ -5,11 +5,11 @@ using Xunit;
 namespace Vivarni.CBE.SqlServer.Test;
 
 [Collection("SqlServerCollection")]
-public class DatabaseInitialisationTests
+public class SqlServerDatabaseInitialisationTests
 {
     private readonly SqlServerTestFixture _fixture;
 
-    public DatabaseInitialisationTests(SqlServerTestFixture fixture)
+    public SqlServerDatabaseInitialisationTests(SqlServerTestFixture fixture)
     {
         _fixture = fixture;
     }

@@ -5,11 +5,11 @@ using Xunit;
 namespace Vivarni.CBE.Postgres.Test;
 
 [Collection("PostgresCollection")]
-public class DatabaseInitialisationTests
+public class PostgresDatabaseInitialisationTests
 {
     private readonly PostgresTestFixture _fixture;
 
-    public DatabaseInitialisationTests(PostgresTestFixture fixture)
+    public PostgresDatabaseInitialisationTests(PostgresTestFixture fixture)
     {
         _fixture = fixture;
     }
