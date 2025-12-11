@@ -172,6 +172,8 @@ namespace Vivarni.CBE.Postgres
             sb.AppendLine($"CREATE SCHEMA IF NOT EXISTS {_schema};");
             sb.Append("\n\n");
 
+            var indexStatements = new List<string>();
+
             foreach (var type in types)
             {
                 var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
@@ -186,10 +188,26 @@ namespace Vivarni.CBE.Postgres
                     var columnName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + prop.Name);
                     var sqlType = GetSqlType(prop);
                     columnDefinitions.Add($"    {columnName} {sqlType}");
+
+                    // Check for IndexColumn attribute and collect index statements
+                    if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                    {
+                        var indexName = $"IX_{type.Name}_{prop.Name}";
+                        var indexStatement = $"CREATE INDEX IF NOT EXISTS {indexName} ON {_schema}.{tableName} ({columnName});";
+                        indexStatements.Add(indexStatement);
+                    }
                 }
 
                 sb.AppendLine(string.Join(",\n", columnDefinitions));
                 sb.AppendLine(");\n");
+            }
+
+            // Add all index statements after table creation
+            if (indexStatements.Count > 0)
+            {
+                sb.AppendLine("-- Create indexes");
+                sb.AppendLine(string.Join("\n", indexStatements));
+                sb.AppendLine();
             }
 
             // Create state registry table
