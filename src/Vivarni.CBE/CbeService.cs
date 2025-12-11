@@ -1,7 +1,6 @@
 ﻿using System.Data;
 using System.Globalization;
 using System.IO.Compression;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using CsvHelper;
@@ -20,8 +19,6 @@ public interface ICbeService
 
 internal class CbeService : ICbeService
 {
-    private const int INSERT_BATCH_SIZE = 100_000;
-
     private readonly ICbeStateRegistry _applicationStateRepository;
     private readonly ICbeDataStorage _storage;
     private readonly ICbeDataSource _source;

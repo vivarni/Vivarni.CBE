@@ -15,8 +15,8 @@ public static class ServiceCollectionExtensions
         if (options.DataStorageFactory == null)
             throw new InvalidOperationException("Vivarni CBE: Missing data storage configuration.");
 
-        if (options.DataSourceFactory == null)
-            throw new InvalidOperationException("Vivarni CBE: Missing data source configuration.");
+        if (options.DataSourceFactory == null && options.DataSourceCacheFactory == null)
+            throw new InvalidOperationException("Vivarni CBE: Missing data source and data source cache configuration. At least one of DataSourceFactory or DataSourceCacheFactory must be provided.");
 
         if (options.SynchronisationStateRegistryFactory == null)
             throw new InvalidOperationException("Vivarni CBE: Missing data source configuration.");
@@ -24,7 +24,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICbeService, CbeService>();
         services.AddScoped<ICbeStateRegistry>(s => options.SynchronisationStateRegistryFactory(s));
         services.AddScoped<ICbeDataStorage>(s => options.DataStorageFactory(s));
-        services.AddScoped<ICbeDataSource>(s => options.DataSourceFactory(s));
+        services.AddScoped<ICbeDataSource>(s =>
+        {
+            var source = options.DataSourceFactory == null ? null : options.DataSourceFactory(s);
+            var cache = options.DataSourceCacheFactory == null ? null : options.DataSourceCacheFactory(s);
+            return new CbeDataSourceProxy(source, cache);
+        });
 
         return services;
     }
@@ -34,6 +39,7 @@ public class VivarniCbeOptions
 {
     public Func<IServiceProvider, ICbeDataStorage>? DataStorageFactory { get; set; }
     public Func<IServiceProvider, ICbeDataSource>? DataSourceFactory { get; set; }
+    public Func<IServiceProvider, ICbeDataSource>? DataSourceCacheFactory { get; set; }
     public Func<IServiceProvider, ICbeStateRegistry>? SynchronisationStateRegistryFactory { get; set; }
 
     public VivarniCbeOptions WithHttpSource(string userName, string password)
@@ -45,9 +51,9 @@ public class VivarniCbeOptions
         return this;
     }
 
-    public VivarniCbeOptions WithFileSystemSource(string path)
+    public VivarniCbeOptions WithFileSystemCache(string path)
     {
-        DataSourceFactory = (s) => new FileSystemCbeDataSource(path);
+        DataSourceCacheFactory = (s) => new FileSystemCbeDataSource(path);
         return this;
     }
 }

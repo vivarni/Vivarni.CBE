@@ -1,6 +1,6 @@
 ﻿namespace Vivarni.CBE.DataSources;
 
-public class CbeOpenDataFile
+public class CbeOpenDataFile : IEquatable<CbeOpenDataFile>
 {
     public string Filename { get; }
     public string Source { get; private set; }
@@ -57,4 +57,25 @@ public class CbeOpenDataFile
 
     public override string ToString()
         => Filename;
+
+    public bool Equals(CbeOpenDataFile? other)
+    {
+        if (ReferenceEquals(this, other))
+            return true;
+
+        if (other is null)
+            return false;
+
+        return string.Equals(Filename, other.Filename, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as CbeOpenDataFile);
+    }
+
+    public override int GetHashCode()
+    {
+        return StringComparer.OrdinalIgnoreCase.GetHashCode(Filename);
+    }
 }
