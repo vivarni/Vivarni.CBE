@@ -1,6 +1,6 @@
 ﻿using Vivarni.CBE.DataStorage;
-using Vivarni.CBE.Postgres;
 using Vivarni.CBE.Postgres.DDL;
+using Vivarni.CBE.Postgres.Setup;
 using Vivarni.CBE.Sqlite.DDL;
 using Vivarni.CBE.SqlServer.DDL;
 

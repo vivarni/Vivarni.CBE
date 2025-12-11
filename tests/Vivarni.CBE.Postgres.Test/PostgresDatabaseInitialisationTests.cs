@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using Vivarni.CBE.Postgres.Setup;
 using Vivarni.CBE.Postgres.Test.Fixtures;
 using Xunit;
 

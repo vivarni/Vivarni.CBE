@@ -6,6 +6,7 @@ using Npgsql;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.Postgres.DDL;
+using Vivarni.CBE.Postgres.Setup;
 using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.Postgres;

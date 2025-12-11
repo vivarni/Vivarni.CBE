@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Vivarni.CBE.Sqlite;
+namespace Vivarni.CBE.Sqlite.Setup;
 
 public static class ConfigurationBuilderExtensions
 {

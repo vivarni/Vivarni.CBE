@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Npgsql;
 using Testcontainers.PostgreSql;
+using Vivarni.CBE.Postgres.Setup;
 using Xunit;
 
 namespace Vivarni.CBE.Postgres.Test.Fixtures;

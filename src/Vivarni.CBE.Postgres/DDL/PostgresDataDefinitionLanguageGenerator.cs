@@ -4,6 +4,7 @@ using System.Text;
 using Vivarni.CBE.DataAnnotations;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
+using Vivarni.CBE.Postgres.Setup;
 
 namespace Vivarni.CBE.Postgres.DDL;
 

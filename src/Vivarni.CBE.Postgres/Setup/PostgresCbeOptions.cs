@@ -1,4 +1,4 @@
-﻿namespace Vivarni.CBE.Postgres;
+﻿namespace Vivarni.CBE.Postgres.Setup;
 
 public class PostgresCbeOptions
 {
