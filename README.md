@@ -1,8 +1,12 @@
 # Vivarni.CBE
 
-A simple, practical solution to import and synchronize CBE/KBO data into your own database (e.g., SQL Server, Postgres, Oracle, ...). It provides clear source abstractions, extensible storage backends, and synchronization state tracking so your enterprise registers stay reliably up to date.
+A simple, practical solution to import and synchronize KBO/BCE/CBE data into your own database (e.g., SQL Server, Postgres, Sqlite, ...). It provides clear source abstractions, extensible storage backends, and synchronization state tracking so your enterprise registers stay reliably up to date. CBE stands for Belgium’s Crossroads Bank for Enterprises and is also known as:
 
-The term CBE refers to Belgium’s Crossroads Bank for Enterprises (KBO/BCE). The data provided by the CBE is public available at; you simply need an account on the official website to access and download the datasets. Official website:  https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data
+ * Dutch: _Kruispuntbank van Ondernemingen_ 
+ * French: _Banque-Carrefour des Entreprises_
+ * German: _Zentrale Datenbank der Unternehmen_
+
+The data provided by the CBE is public available at; you simply need an account on the official website to access and download the datasets. Official federal governement website for CBE Open Data: [https://economie.fgov.be/](https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data)
 
 Want to experiment without your own DB? See the sample projects in `sample/`. It demonstrates an end-to-end flow on a local SQLite and Postgres database!
 
@@ -47,7 +51,7 @@ var services = new ServiceCollection()
         .WithHttpSource("cbe-username", "MySecret")
     );
 ```
-### 4. Import CBE/KBO/BCE data to your local database
+### 4. Import KBO/BCE/CBE data to your local database
 Only a single commant to trigger an update/import of your data. This will use partial updates when possible and use the `ICbeSynchronisationStateRegistry` to keep track of which files have been imported. The CBE publishes partial update files on a daily basis. Support for automatic synchronisation via the configuration above is in development.
 ```csharp
 var provider = services.BuildServiceProvider();
