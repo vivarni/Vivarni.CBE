@@ -29,7 +29,9 @@ Consume the package from your own solution via NuGet.
 
 ```bash
 dotnet add package Vivarni.CBE
-dotnet add package Vivarni.CBE.SqlServer
+dotnet add package Vivarni.CBE.SqlServer # if you're using SQL Server
+dotnet add package Vivarni.CBE.Postgres  # if you're using Postgres
+dotnet add package Vivarni.CBE.Sqlite    # if you're using Sqlite
 ```
 
 ### 3. Example (Sqlite)
