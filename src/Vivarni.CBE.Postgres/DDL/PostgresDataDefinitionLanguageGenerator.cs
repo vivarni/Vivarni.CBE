@@ -38,7 +38,6 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
         {
             var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
-            var columns = new List<string>();
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{tableName} (");
 

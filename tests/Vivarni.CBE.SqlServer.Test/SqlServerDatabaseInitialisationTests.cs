@@ -25,16 +25,21 @@ public class SqlServerDatabaseInitialisationTests
     public async Task SqlServerDataStorage_ShouldCreateUniqueTablesForDifferentPrefixes()
     {
         // Arrange
-        var connectionString = _fixture.ConnectionString;
-
         var dataStorage1 = _fixture.NewSqlServerCbeDataStorage(schema: "dbo", tablePrefix: "test1_");
         var dataStorage2 = _fixture.NewSqlServerCbeDataStorage(schema: "dbo", tablePrefix: "test2_");
 
         // Act
         await dataStorage1.InitializeAsync(TestContext.Current.CancellationToken);
         await dataStorage2.InitializeAsync(TestContext.Current.CancellationToken);
+        var realTableNames = await GetRealTableNames();
 
         // Assert
+        Assert.Contains(realTableNames, name => name.StartsWith("test1_"));
+        Assert.Contains(realTableNames, name => name.StartsWith("test2_"));
+    }
+
+    private async Task<List<string>> GetRealTableNames()
+    {
         await using var connection = _fixture.NewDbConnection();
         await connection.OpenAsync(TestContext.Current.CancellationToken);
 
@@ -54,14 +59,6 @@ public class SqlServerDatabaseInitialisationTests
             tableNames.Add(reader.GetString(0));
         }
 
-        // Should have tables for both prefixes
-        Assert.Contains(tableNames, name => name.StartsWith("test1_"));
-        Assert.Contains(tableNames, name => name.StartsWith("test2_"));
-    }
-
-    [Fact]
-    public async Task SqlServerDataStorage_ShouldCreateIndices()
-    {
-
+        return tableNames;
     }
 }

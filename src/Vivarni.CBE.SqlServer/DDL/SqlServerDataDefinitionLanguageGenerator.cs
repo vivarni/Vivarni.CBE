@@ -39,7 +39,6 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
         {
             var tableName = _tablePrefix + type.Name;
             var properties = type.GetProperties();
-            var columns = new List<string>();
 
             sb.AppendLine($"IF OBJECT_ID('{_schema}.{tableName}', 'U') IS NULL\nBEGIN");
             sb.AppendLine($"CREATE TABLE [{_schema}].[{tableName}] (");

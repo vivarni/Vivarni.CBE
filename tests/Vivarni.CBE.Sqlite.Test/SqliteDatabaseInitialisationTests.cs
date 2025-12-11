@@ -25,31 +25,6 @@ public class SqliteDatabaseInitialisationTests : IClassFixture<SqliteTestFixture
     {
         // Arrange
         var storage = _fixture.CbeDataStorage;
-
-        // Act
-        await storage.InitializeAsync(TestContext.Current.CancellationToken);
-
-        // Assert
-        using var connection = _fixture.DbConnection;
-        await connection.OpenAsync(TestContext.Current.CancellationToken);
-
-        const string CheckTablesQuery = @"
-            SELECT name 
-            FROM sqlite_master 
-            WHERE type='table' 
-            AND name NOT LIKE 'sqlite_%'
-            ORDER BY name;";
-
-        using var command = new SqliteCommand(CheckTablesQuery, connection);
-        using var reader = await command.ExecuteReaderAsync(TestContext.Current.CancellationToken);
-
-        var tableNames = new List<string>();
-        while (await reader.ReadAsync(TestContext.Current.CancellationToken))
-        {
-            tableNames.Add(reader.GetString(0));
-        }
-
-        // Should have created tables from CBE entities and StateRegistry table
         var expectedTables = new[]
         {
             "CbeActivity",
@@ -64,12 +39,30 @@ public class SqliteDatabaseInitialisationTests : IClassFixture<SqliteTestFixture
             "StateRegistry"
         };
 
+        // Act
+        await storage.InitializeAsync(TestContext.Current.CancellationToken);
+        var tableNames = GetRealTableNames();
+
+        // Assert
         Assert.Equal(expectedTables.OrderBy(x => x), tableNames.OrderBy(x => x));
     }
 
-    [Fact]
-    public async Task SqliteDataStorage_ShouldCreateIndices()
+    private async IAsyncEnumerable<string> GetRealTableNames()
     {
+        using var connection = _fixture.DbConnection;
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
 
+        const string CheckTablesQuery = @"
+            SELECT name 
+            FROM sqlite_master 
+            WHERE type='table' 
+            AND name NOT LIKE 'sqlite_%'
+            ORDER BY name;";
+
+        using var command = new SqliteCommand(CheckTablesQuery, connection);
+        using var reader = await command.ExecuteReaderAsync(TestContext.Current.CancellationToken);
+
+        while (await reader.ReadAsync(TestContext.Current.CancellationToken))
+            yield return reader.GetString(0);
     }
 }
