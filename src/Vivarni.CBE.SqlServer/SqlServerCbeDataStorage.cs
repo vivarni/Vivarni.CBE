@@ -81,7 +81,6 @@ internal class SqlServerCbeDataStorage
         }
     }
 
-
     public async Task ClearAsync<T>(CancellationToken cancellationToken)
         where T : ICbeEntity
     {
