@@ -3,7 +3,7 @@ using Npgsql;
 using Testcontainers.PostgreSql;
 using Xunit;
 
-namespace Vivarni.CBE.Postgres.Test.fixtures;
+namespace Vivarni.CBE.Postgres.Test.Fixtures;
 
 public class PostgresTestFixture : IAsyncLifetime
 {

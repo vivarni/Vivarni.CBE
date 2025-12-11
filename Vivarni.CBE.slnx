@@ -4,6 +4,8 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Vivarni.CBE.Postgres.Test/Vivarni.CBE.Postgres.Test.csproj" />
+    <Project Path="tests/Vivarni.CBE.Sqlite.Test/Vivarni.CBE.Sqlite.Test.csproj" />
+    <Project Path="tests/Vivarni.CBE.SqlServer.Test/Vivarni.CBE.SqlServer.Test.csproj" />
     <Project Path="tests/Vivarni.CBE.Test/Vivarni.CBE.Test.csproj" />
   </Folder>
   <Project Path="src/Vivarni.CBE.Postgres/Vivarni.CBE.Postgres.csproj" />

@@ -1,37 +1,34 @@
-﻿using Npgsql;
-using Vivarni.CBE.Postgres.Test.Fixtures;
+﻿using Microsoft.Data.SqlClient;
+using Vivarni.CBE.SqlServer.Test.Fixtures;
 using Xunit;
 
-namespace Vivarni.CBE.Postgres.Test;
+namespace Vivarni.CBE.SqlServer.Test;
 
-[Collection("PostgresCollection")]
+[Collection("SqlServerCollection")]
 public class DatabaseInitialisationTests
 {
-    private readonly PostgresTestFixture _fixture;
+    private readonly SqlServerTestFixture _fixture;
 
-    public DatabaseInitialisationTests(PostgresTestFixture fixture)
+    public DatabaseInitialisationTests(SqlServerTestFixture fixture)
     {
         _fixture = fixture;
     }
 
     [Fact]
-    public async Task PostgresStorage_DoesNotThrowException()
+    public async Task SqlServerDataStorage_DoesNotThrowException()
     {
-        var storage = _fixture.NewPostgresCbeDataStorage();
+        var storage = _fixture.NewSqlServerCbeDataStorage();
         await storage.InitializeAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
-    public async Task DataStorage_ShouldCreateUniqueTablesForDifferentPrefixes()
+    [Fact(DisplayName = "Should use TablePrefix")]
+    public async Task SqlServerDataStorage_ShouldCreateUniqueTablesForDifferentPrefixes()
     {
         // Arrange
-        var connectionString = _fixture.NewDbConnection;
+        var connectionString = _fixture.ConnectionString;
 
-        var options1 = new PostgresCbeOptions { TablePrefix = "test1_" };
-        var options2 = new PostgresCbeOptions { TablePrefix = "test2_" };
-
-        var dataStorage1 = _fixture.NewPostgresCbeDataStorage(options1);
-        var dataStorage2 = _fixture.NewPostgresCbeDataStorage(options2);
+        var dataStorage1 = _fixture.NewSqlServerCbeDataStorage(schema: "dbo", tablePrefix: "test1_");
+        var dataStorage2 = _fixture.NewSqlServerCbeDataStorage(schema: "dbo", tablePrefix: "test2_");
 
         // Act
         await dataStorage1.InitializeAsync(TestContext.Current.CancellationToken);
@@ -42,13 +39,13 @@ public class DatabaseInitialisationTests
         await connection.OpenAsync(TestContext.Current.CancellationToken);
 
         const string CheckTablesQuery = @"
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name LIKE '%cbe%'
-            ORDER BY table_name;";
+            SELECT TABLE_NAME 
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = 'dbo' 
+            AND (TABLE_NAME LIKE 'test1_%' OR TABLE_NAME LIKE 'test2_%')
+            ORDER BY TABLE_NAME;";
 
-        await using var command = new NpgsqlCommand(CheckTablesQuery, connection);
+        await using var command = new SqlCommand(CheckTablesQuery, connection);
         await using var reader = await command.ExecuteReaderAsync(TestContext.Current.CancellationToken);
 
         var tableNames = new List<string>();
