@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using Vivarni.CBE.Postgres.Test.fixtures;
 using Xunit;
 
 namespace Vivarni.CBE.Postgres.Test;
