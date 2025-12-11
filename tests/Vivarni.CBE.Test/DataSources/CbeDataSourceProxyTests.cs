@@ -110,8 +110,8 @@ public class CbeDataSourceProxyTests
     {
         // Arrange
         var file = new CbeOpenDataFile("KboOpenData_0001_2025_01_01_Full.zip");
-        var cacheStream = new MemoryStream();
-        var sourceStream = new MemoryStream();
+        using var cacheStream = new MemoryStream();
+        using var sourceStream = new MemoryStream();
 
         _mockCache.Setup(c => c.ReadAsync(file, _cancellationToken))
             .ReturnsAsync(cacheStream);
@@ -134,7 +134,7 @@ public class CbeDataSourceProxyTests
     {
         // Arrange
         var file = new CbeOpenDataFile("KboOpenData_0001_2025_01_01_Full.zip");
-        var sourceStream = new MemoryStream();
+        using var sourceStream = new MemoryStream();
 
         _mockCache.Setup(c => c.ReadAsync(file, _cancellationToken))
             .ThrowsAsync(new FileNotFoundException("Cache file not found"));
@@ -157,7 +157,7 @@ public class CbeDataSourceProxyTests
     {
         // Arrange
         var file = new CbeOpenDataFile("KboOpenData_0001_2025_01_01_Full.zip");
-        var sourceStream = new MemoryStream();
+        using var sourceStream = new MemoryStream();
 
         _mockSource.Setup(s => s.ReadAsync(file, _cancellationToken))
             .ReturnsAsync(sourceStream);
@@ -177,7 +177,7 @@ public class CbeDataSourceProxyTests
     {
         // Arrange
         var file = new CbeOpenDataFile("KboOpenData_0001_2025_01_01_Full.zip");
-        var cacheStream = new MemoryStream();
+        using var cacheStream = new MemoryStream();
 
         _mockCache.Setup(c => c.ReadAsync(file, _cancellationToken))
             .ReturnsAsync(cacheStream);

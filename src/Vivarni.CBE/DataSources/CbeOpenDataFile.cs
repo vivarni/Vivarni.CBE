@@ -76,6 +76,6 @@ public class CbeOpenDataFile : IEquatable<CbeOpenDataFile>
 
     public override int GetHashCode()
     {
-        return StringComparer.InvariantCulture.GetHashCode(Filename);
+        return StringComparer.OrdinalIgnoreCase.GetHashCode(Filename);
     }
 }
