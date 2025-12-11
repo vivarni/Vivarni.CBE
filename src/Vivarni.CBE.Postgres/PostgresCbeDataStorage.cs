@@ -3,9 +3,8 @@ using System.Data;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using Npgsql;
-using NpgsqlTypes;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using Vivarni.CBE.DataAnnotations;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
@@ -17,19 +16,24 @@ namespace Vivarni.CBE.Postgres
         : ICbeDataStorage
         , ICbeStateRegistry
     {
-        private const int INSERT_BATCH_SIZE = 250_000;
+        private const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
+        private static readonly JsonSerializerOptions s_jsonSerializerOptions = new() { WriteIndented = true };
 
+        private readonly int _batchSize;
         private readonly string _connectionString;
         private readonly string _schema;
         private readonly string _tablePrefix;
         private readonly ILogger _logger;
 
-        public PostgresCbeDataStorage(ILogger<PostgresCbeDataStorage> logger, string connectionString, string schema, string tablePrefix)
+        public PostgresCbeDataStorage(ILogger<PostgresCbeDataStorage> logger, string connectionString, PostgresCbeOptions? opts = null)
         {
+            opts ??= new();
+
             _logger = logger;
             _connectionString = connectionString;
-            _schema = schema;
-            _tablePrefix = tablePrefix;
+            _schema = DatabaseObjectNameProvider.GetObjectName(opts.Schema);
+            _tablePrefix = opts.TablePrefix;
+            _batchSize = opts.BinaryImporterBatchSize;
         }
 
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -51,19 +55,19 @@ namespace Vivarni.CBE.Postgres
             where T : ICbeEntity
         {
             var totalImportCount = 0;
-            var tableName = $"\"{_schema}\".\"{_tablePrefix + typeof(T).Name}\"";
+            var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
 
             // Pre-compile property accessors for better performance
             var properties = typeof(T).GetProperties();
-            var columnNames = properties.Select(p => $"\"{p.Name}\"").ToList();
-            var copyCommand = $"COPY {tableName} ({string.Join(", ", columnNames)}) FROM STDIN (FORMAT BINARY)";
+            var columnNames = properties.Select(p => DatabaseObjectNameProvider.GetObjectName(p.Name)).ToList();
+            var copyCommand = $"COPY {_schema}.{tableName} ({string.Join(", ", columnNames)}) FROM STDIN (FORMAT BINARY)";
 
             // Use a single connection for all batches to avoid connection overhead
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync(cancellationToken);
 
             // Process in streaming fashion to avoid loading all data into memory
-            foreach (var batch in entities.Batch(INSERT_BATCH_SIZE))
+            foreach (var batch in entities.Batch(_batchSize))
             {
                 var batchList = batch.ToList();
                 if (batchList.Count <= 0)
@@ -165,23 +169,23 @@ namespace Vivarni.CBE.Postgres
             var sb = new StringBuilder();
 
             // Create schema if it doesn't exist
-            sb.AppendLine($"CREATE SCHEMA IF NOT EXISTS \"{_schema}\";");
+            sb.AppendLine($"CREATE SCHEMA IF NOT EXISTS {_schema};");
             sb.Append("\n\n");
 
             foreach (var type in types)
             {
-                var tableName = _tablePrefix + type.Name;
+                var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
                 var properties = type.GetProperties();
                 var columns = new List<string>();
 
-                sb.AppendLine($"CREATE TABLE IF NOT EXISTS \"{_schema}\".\"{tableName}\" (");
+                sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{tableName} (");
 
                 var columnDefinitions = new List<string>();
                 foreach (var prop in properties)
                 {
-                    var columnName = _tablePrefix + prop.Name;
+                    var columnName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + prop.Name);
                     var sqlType = GetSqlType(prop);
-                    columnDefinitions.Add($"    \"{columnName}\" {sqlType}");
+                    columnDefinitions.Add($"    {columnName} {sqlType}");
                 }
 
                 sb.AppendLine(string.Join(",\n", columnDefinitions));
@@ -189,10 +193,10 @@ namespace Vivarni.CBE.Postgres
             }
 
             // Create state registry table
-            var stateTableName = _tablePrefix + "StateRegistry";
-            sb.AppendLine($"CREATE TABLE IF NOT EXISTS \"{_schema}\".\"{stateTableName}\" (");
-            sb.AppendLine($"    \"Variable\" VARCHAR(100) NOT NULL PRIMARY KEY,");
-            sb.AppendLine($"    \"Value\" TEXT NULL");
+            var stateTableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + "StateRegistry");
+            sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{stateTableName} (");
+            sb.AppendLine($"    Variable VARCHAR(100) NOT NULL PRIMARY KEY,");
+            sb.AppendLine($"    Value TEXT NULL");
             sb.AppendLine(");\n");
 
             return sb.ToString();
@@ -201,11 +205,12 @@ namespace Vivarni.CBE.Postgres
         public async Task ClearAsync<T>(CancellationToken cancellationToken)
             where T : ICbeEntity
         {
-            var tableName = $"\"{_schema}\".\"{_tablePrefix + typeof(T).Name}\"";
+            var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
+
             using var conn = new NpgsqlConnection(_connectionString);
             using var command = conn.CreateCommand();
 
-            command.CommandText = $"TRUNCATE TABLE " + tableName;
+            command.CommandText = $"TRUNCATE TABLE {_schema}.{tableName}";
             command.CommandType = CommandType.Text;
 
             await conn.OpenAsync(cancellationToken);
@@ -221,15 +226,13 @@ namespace Vivarni.CBE.Postgres
             where T : ICbeEntity
         {
             // 1) Materialize IDs and short-circuit if empty
-            var ids = entityIds?.ToList() ?? new List<object>();
+            var ids = entityIds?.ToList() ?? [];
             if (ids.Count == 0)
                 return 0;
 
             // 2) Prepare safe identifiers
-            var tableName = _tablePrefix + typeof(T).Name;
-            var quotedSchema = QuoteIdentifier(_schema);          // "schema"
-            var quotedTable = QuoteIdentifier(tableName);        // "prefixTypeName"
-            var quotedColumn = QuoteIdentifier(deleteOnProperty.Name);
+            var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
+            var quotedColumn = DatabaseObjectNameProvider.GetObjectName(deleteOnProperty.Name);
 
             await using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync(cancellationToken);
@@ -252,19 +255,11 @@ namespace Vivarni.CBE.Postgres
 
             command.CommandType = CommandType.Text;
             command.CommandText =
-                $"DELETE FROM {quotedSchema}.{quotedTable} WHERE {quotedColumn} IN ({string.Join(",", paramNames)})";
+                $"DELETE FROM {_schema}.{tableName} WHERE {quotedColumn} IN ({string.Join(",", paramNames)})";
 
             var affected = await command.ExecuteNonQueryAsync(cancellationToken);
-            _logger.LogDebug("Deleted {AffectedRows} records from {TableName}", affected, $"{quotedSchema}.{quotedTable}");
+            _logger.LogDebug("Deleted {AffectedRows} records from {TableName}", affected, $"{_schema}.{tableName}");
             return affected;
-        }
-
-        private static string QuoteIdentifier(string identifier)
-        {
-            if (string.IsNullOrWhiteSpace(identifier))
-                throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));
-            // Wrap in " " and escape any embedded " by doubling it: "" (PostgreSQL identifier escaping)
-            return "\"" + identifier.Replace("\"", "\"\"") + "\"";
         }
 
         private static object CoerceId(object value, Type targetType)
@@ -310,14 +305,13 @@ namespace Vivarni.CBE.Postgres
 
         public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)
         {
-            const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
-            var tableName = $"\"{_schema}\".\"{_tablePrefix}StateRegistry\"";
+            var tableName = DatabaseObjectNameProvider.GetObjectName($"{_tablePrefix}StateRegistry");
 
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync(cancellationToken);
             using var command = conn.CreateCommand();
 
-            command.CommandText = $"SELECT \"Value\" FROM {tableName} WHERE \"Variable\" = @Variable";
+            command.CommandText = $"SELECT value FROM {_schema}.{tableName} WHERE variable = @Variable";
             var parameter = command.CreateParameter();
             parameter.ParameterName = "@Variable";
             parameter.Value = SYNC_PROCESSED_FILES_VARIABLE;
@@ -326,9 +320,7 @@ namespace Vivarni.CBE.Postgres
             var result = await command.ExecuteScalarAsync(cancellationToken) as string;
 
             if (string.IsNullOrEmpty(result))
-            {
-                return Enumerable.Empty<CbeOpenDataFile>();
-            }
+                return [];
 
             var list = JsonSerializer.Deserialize<List<string>>(result) ?? [];
             return list.Select(s => new CbeOpenDataFile(s));
@@ -336,22 +328,19 @@ namespace Vivarni.CBE.Postgres
 
         public async Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken)
         {
-            const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
-            var tableName = $"\"{_schema}\".\"{_tablePrefix}StateRegistry\"";
+            var tableName = DatabaseObjectNameProvider.GetObjectName($"{_tablePrefix}StateRegistry");
 
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync(cancellationToken);
 
             var data = processedFiles.Select(s => s.Filename);
-            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-
-            const string upsertQuery = @"
-                INSERT INTO {0} (""Variable"", ""Value"") VALUES (@Variable, @Value)
-                ON CONFLICT (""Variable"")
-                DO UPDATE SET ""Value"" = EXCLUDED.""Value""";
+            var json = JsonSerializer.Serialize(data, s_jsonSerializerOptions);
 
             using var command = conn.CreateCommand();
-            command.CommandText = string.Format(upsertQuery, tableName);
+            command.CommandText = $@"
+                INSERT INTO {_schema}.{tableName} (Variable, Value) VALUES (@Variable, @Value)
+                ON CONFLICT (Variable)
+                DO UPDATE SET Value = EXCLUDED.Value";
 
             var variableParam = command.CreateParameter();
             variableParam.ParameterName = "@Variable";
