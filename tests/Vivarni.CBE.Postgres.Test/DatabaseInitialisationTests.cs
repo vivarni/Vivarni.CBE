@@ -15,6 +15,13 @@ public class DatabaseInitialisationTests
     }
 
     [Fact]
+    public async Task PostgresStorage_DoesNotThrowException()
+    {
+        var storage = _fixture.NewPostgresCbeDataStorage();
+        await storage.InitializeAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task DataStorage_ShouldCreateUniqueTablesForDifferentPrefixes()
     {
         // Arrange
