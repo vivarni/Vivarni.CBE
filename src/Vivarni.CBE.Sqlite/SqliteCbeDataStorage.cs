@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataAnnotations;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
+using Vivarni.CBE.Sqlite.DDL;
 using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.Sqlite;
@@ -20,12 +21,13 @@ internal class SqliteCbeDataStorage
 
     private readonly string _connectionString;
     private readonly ILogger _logger;
+    private readonly SqliteDataDefinitionLanguageGenerator _ddl;
 
     public SqliteCbeDataStorage(ILogger<SqliteCbeDataStorage> logger, string connectionString)
     {
         _logger = logger;
-        _connectionString = connectionString
-            ?? throw new InvalidOperationException("Missing connection string for CBE database");
+        _connectionString = connectionString ?? throw new InvalidOperationException("Missing connection string for CBE database");
+        _ddl = new SqliteDataDefinitionLanguageGenerator();
     }
 
     public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
@@ -33,14 +35,14 @@ internal class SqliteCbeDataStorage
     {
         var totalImportCount = 0;
         var entityType = typeof(T);
-        var tableName = QuoteIdentifier(entityType.Name);
+        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(entityType.Name);
         var properties = entityType.GetProperties();
 
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
 
         // Build INSERT statement with all columns
-        var columnNames = properties.Select(p => QuoteIdentifier(p.Name));
+        var columnNames = properties.Select(p => SqliteDatabaseObjectNameProvider.QuoteIdentifier(p.Name));
         var parameterNames = properties.Select(p => $"@{p.Name}");
         var insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnNames)}) VALUES ({string.Join(", ", parameterNames)})";
 
@@ -92,7 +94,7 @@ internal class SqliteCbeDataStorage
     public async Task ClearAsync<T>(CancellationToken cancellationToken = default)
         where T : ICbeEntity
     {
-        var tableName = QuoteIdentifier(typeof(T).Name);
+        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(typeof(T).Name);
         using var conn = new SqliteConnection(_connectionString);
         using var command = conn.CreateCommand();
 
@@ -106,12 +108,10 @@ internal class SqliteCbeDataStorage
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        var sql = GenerateInitialisationSqlScript();
-
         using var conn = new SqliteConnection(_connectionString);
         using var command = conn.CreateCommand();
 
-        command.CommandText = sql;
+        command.CommandText = _ddl.GenerateDDL();
         command.CommandType = CommandType.Text;
 
         await conn.OpenAsync(cancellationToken);
@@ -126,8 +126,8 @@ internal class SqliteCbeDataStorage
         using var command = conn.CreateCommand();
 
         var ids = entityIds.ToArray();
-        var tableName = QuoteIdentifier(typeof(T).Name);
-        var columnName = QuoteIdentifier(deleteOnProperty.Name);
+        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(typeof(T).Name);
+        var columnName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(deleteOnProperty.Name);
 
         await conn.OpenAsync(cancellationToken);
 
@@ -147,106 +147,6 @@ internal class SqliteCbeDataStorage
         command.CommandText = $"DELETE FROM {tableName} WHERE {columnName} IN ({string.Join(",", paramNames)})";
 
         return await command.ExecuteNonQueryAsync(cancellationToken);
-    }
-
-    private string GenerateInitialisationSqlScript()
-    {
-        var types = typeof(ICbeEntity)
-            .Assembly
-            .GetTypes()
-            .Where(t => t.GetInterfaces().Contains(typeof(ICbeEntity)) && t.IsClass);
-
-        var sb = new StringBuilder();
-        var indexStatements = new List<string>();
-
-        foreach (var type in types)
-        {
-            var tableName = type.Name;
-            var properties = type.GetProperties();
-
-            sb.AppendLine($"CREATE TABLE IF NOT EXISTS {QuoteIdentifier(tableName)} (");
-
-            var columnDefinitions = new List<string>();
-            foreach (var prop in properties)
-            {
-                var columnName = prop.Name;
-                var sqlType = GetSqliteType(prop);
-                columnDefinitions.Add($"    {QuoteIdentifier(columnName)} {sqlType}");
-
-                // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
-                {
-                    var indexName = $"IX_{type.Name}_{prop.Name}";
-                    var indexStatement = $"CREATE INDEX IF NOT EXISTS {QuoteIdentifier(indexName)} ON {QuoteIdentifier(tableName)} ({QuoteIdentifier(columnName)});";
-                    indexStatements.Add(indexStatement);
-                }
-            }
-
-            sb.AppendLine(string.Join(",\n", columnDefinitions));
-            sb.AppendLine(");");
-            sb.AppendLine();
-        }
-
-        // Add all index statements after table creation
-        if (indexStatements.Count > 0)
-        {
-            sb.AppendLine("-- Create indexes");
-            sb.AppendLine(string.Join("\n", indexStatements));
-            sb.AppendLine();
-        }
-
-        // Create state registry table
-        sb.AppendLine("CREATE TABLE IF NOT EXISTS \"StateRegistry\" (");
-        sb.AppendLine("    \"Variable\" TEXT PRIMARY KEY NOT NULL,");
-        sb.AppendLine("    \"Value\" TEXT");
-        sb.AppendLine(");");
-        sb.AppendLine();
-
-        return sb.ToString();
-    }
-
-    private string GetSqliteType(PropertyInfo prop)
-    {
-        var maxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
-        var propertyType = prop.PropertyType;
-        var isPrimaryKey = prop.GetCustomAttribute<PrimaryKeyColumn>() != null;
-
-        // Handle nullable types
-        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-        var isNullable = Nullable.GetUnderlyingType(propertyType) != null || !propertyType.IsValueType;
-
-        var sqlType = underlyingType.Name switch
-        {
-            nameof(String) => maxLength.HasValue ? $"TEXT({maxLength})" : "TEXT",
-            nameof(DateTime) => "DATETIME",
-            nameof(Int32) => "INTEGER",
-            nameof(Int64) => "INTEGER",
-            nameof(Byte) => "INTEGER",
-            nameof(Boolean) => "INTEGER", // SQLite uses INTEGER for boolean
-            nameof(Decimal) => "REAL",
-            nameof(Double) => "REAL",
-            nameof(DateOnly) => "DATE",
-            _ => "TEXT" // Default fallback
-        };
-
-        var constraints = new List<string>();
-
-        if (isPrimaryKey)
-            constraints.Add("PRIMARY KEY");
-
-        if (!isNullable)
-            constraints.Add("NOT NULL");
-
-        return constraints.Count > 0 ? $"{sqlType} {string.Join(" ", constraints)}" : sqlType;
-    }
-
-    private static string QuoteIdentifier(string identifier)
-    {
-        if (string.IsNullOrWhiteSpace(identifier))
-            throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));
-
-        var safe = identifier.Replace("\"", "\"\"");
-        return $"\"{safe}\"";
     }
 
     public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)

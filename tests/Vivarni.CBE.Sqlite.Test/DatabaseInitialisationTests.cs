@@ -66,4 +66,10 @@ public class DatabaseInitialisationTests : IClassFixture<SqliteTestFixture>
 
         Assert.Equal(expectedTables.OrderBy(x => x), tableNames.OrderBy(x => x));
     }
+
+    [Fact]
+    public async Task SqliteDataStorage_ShouldCreateIndices()
+    {
+
+    }
 }

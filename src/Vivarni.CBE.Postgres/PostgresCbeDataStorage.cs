@@ -1,13 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Data;
+﻿using System.Data;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using Vivarni.CBE.DataAnnotations;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
+using Vivarni.CBE.Postgres.DDL;
 using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.Postgres;
@@ -24,6 +22,7 @@ internal class PostgresCbeDataStorage
     private readonly string _schema;
     private readonly string _tablePrefix;
     private readonly ILogger _logger;
+    private readonly PostgresDataDefinitionLanguageGenerator _ddl;
 
     public PostgresCbeDataStorage(ILogger<PostgresCbeDataStorage> logger, string connectionString, PostgresCbeOptions? opts = null)
     {
@@ -31,19 +30,18 @@ internal class PostgresCbeDataStorage
 
         _logger = logger;
         _connectionString = connectionString;
-        _schema = DatabaseObjectNameProvider.GetObjectName(opts.Schema);
+        _schema = PostgresDatabaseObjectNameProvider.GetObjectName(opts.Schema);
         _tablePrefix = opts.TablePrefix;
         _batchSize = opts.BinaryImporterBatchSize;
+        _ddl = new(opts);
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        var sql = GenerateInitialisationSqlScript();
-
         using var conn = new NpgsqlConnection(_connectionString);
         using var command = conn.CreateCommand();
 
-        command.CommandText = sql;
+        command.CommandText = _ddl.GenerateDDL();
         command.CommandType = CommandType.Text;
 
         await conn.OpenAsync(cancellationToken);
@@ -55,11 +53,11 @@ internal class PostgresCbeDataStorage
         where T : ICbeEntity
     {
         var totalImportCount = 0;
-        var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
+        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
 
         // Pre-compile property accessors for better performance
         var properties = typeof(T).GetProperties();
-        var columnNames = properties.Select(p => DatabaseObjectNameProvider.GetObjectName(p.Name)).ToList();
+        var columnNames = properties.Select(p => PostgresDatabaseObjectNameProvider.GetObjectName(p.Name)).ToList();
         var copyCommand = $"COPY {_schema}.{tableName} ({string.Join(", ", columnNames)}) FROM STDIN (FORMAT BINARY)";
 
         // Use a single connection for all batches to avoid connection overhead
@@ -125,105 +123,10 @@ internal class PostgresCbeDataStorage
         }
     }
 
-    private string GetSqlType(PropertyInfo prop)
-    {
-        var maxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
-        var propertyType = prop.PropertyType;
-
-        // Handle nullable types
-        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-        var isNullable = Nullable.GetUnderlyingType(propertyType) != null || !propertyType.IsValueType;
-
-        var sqlType = underlyingType.Name switch
-        {
-            nameof(String) => maxLength.HasValue ? $"VARCHAR({maxLength})" : "TEXT",
-            nameof(DateTime) => "TIMESTAMP",
-            nameof(Int32) => "INTEGER",
-            nameof(Int64) => "BIGINT",
-            nameof(Byte) => "SMALLINT",
-            nameof(Boolean) => "BOOLEAN",
-            nameof(Decimal) => "DECIMAL(18,2)",
-            nameof(Double) => "DOUBLE PRECISION",
-            nameof(DateOnly) => "DATE",
-            nameof(Guid) => "UUID",
-            _ => "TEXT" // Default fallback
-        };
-
-        var primaryKeySuffix = prop.GetCustomAttribute<PrimaryKeyColumn>() != null
-            ? " PRIMARY KEY"
-            : "";
-        var nullSuffix = isNullable && propertyType.IsValueType && Nullable.GetUnderlyingType(propertyType) != null
-            ? " NULL"
-            : " NOT NULL";
-
-        return $"{sqlType}{nullSuffix}{primaryKeySuffix}";
-    }
-
-    protected string GenerateInitialisationSqlScript()
-    {
-        var types = typeof(ICbeEntity)
-            .Assembly
-            .GetTypes()
-            .Where(t => t.GetInterfaces().Contains(typeof(ICbeEntity)) && t.IsClass);
-
-        var sb = new StringBuilder();
-
-        // Create schema if it doesn't exist
-        sb.AppendLine($"CREATE SCHEMA IF NOT EXISTS {_schema};");
-        sb.Append("\n\n");
-
-        var indexStatements = new List<string>();
-
-        foreach (var type in types)
-        {
-            var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
-            var properties = type.GetProperties();
-            var columns = new List<string>();
-
-            sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{tableName} (");
-
-            var columnDefinitions = new List<string>();
-            foreach (var prop in properties)
-            {
-                var columnName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + prop.Name);
-                var sqlType = GetSqlType(prop);
-                columnDefinitions.Add($"    {columnName} {sqlType}");
-
-                // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
-                {
-                    var indexName = $"IX_{type.Name}_{prop.Name}";
-                    var indexStatement = $"CREATE INDEX IF NOT EXISTS {indexName} ON {_schema}.{tableName} ({columnName});";
-                    indexStatements.Add(indexStatement);
-                }
-            }
-
-            sb.AppendLine(string.Join(",\n", columnDefinitions));
-            sb.AppendLine(");\n");
-        }
-
-        // Add all index statements after table creation
-        if (indexStatements.Count > 0)
-        {
-            sb.AppendLine("-- Create indexes");
-            sb.AppendLine(string.Join("\n", indexStatements));
-            sb.AppendLine();
-        }
-
-        // Create state registry table
-        var stateTableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + "StateRegistry");
-        sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{stateTableName} (");
-        sb.AppendLine($"    Variable VARCHAR(100) NOT NULL PRIMARY KEY,");
-        sb.AppendLine($"    Value TEXT NULL");
-        sb.AppendLine(");\n");
-
-        return sb.ToString();
-    }
-
     public async Task ClearAsync<T>(CancellationToken cancellationToken)
         where T : ICbeEntity
     {
-        var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
+        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
 
         using var conn = new NpgsqlConnection(_connectionString);
         using var command = conn.CreateCommand();
@@ -249,8 +152,8 @@ internal class PostgresCbeDataStorage
             return 0;
 
         // 2) Prepare safe identifiers
-        var tableName = DatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
-        var quotedColumn = DatabaseObjectNameProvider.GetObjectName(deleteOnProperty.Name);
+        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
+        var quotedColumn = PostgresDatabaseObjectNameProvider.GetObjectName(deleteOnProperty.Name);
 
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
@@ -323,7 +226,7 @@ internal class PostgresCbeDataStorage
 
     public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)
     {
-        var tableName = DatabaseObjectNameProvider.GetObjectName($"{_tablePrefix}StateRegistry");
+        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName($"{_tablePrefix}StateRegistry");
 
         using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
@@ -346,7 +249,7 @@ internal class PostgresCbeDataStorage
 
     public async Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken)
     {
-        var tableName = DatabaseObjectNameProvider.GetObjectName($"{_tablePrefix}StateRegistry");
+        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName($"{_tablePrefix}StateRegistry");
 
         using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);

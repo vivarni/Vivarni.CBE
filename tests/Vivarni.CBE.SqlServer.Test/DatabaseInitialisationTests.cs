@@ -58,4 +58,10 @@ public class DatabaseInitialisationTests
         Assert.Contains(tableNames, name => name.StartsWith("test1_"));
         Assert.Contains(tableNames, name => name.StartsWith("test2_"));
     }
+
+    [Fact]
+    public async Task SqlServerDataStorage_ShouldCreateIndices()
+    {
+
+    }
 }
