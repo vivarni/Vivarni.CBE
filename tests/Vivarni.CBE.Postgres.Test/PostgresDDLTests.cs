@@ -1,5 +1,4 @@
-﻿using Vivarni.CBE.Postgres;
-using Vivarni.CBE.Postgres.DDL;
+﻿using Vivarni.CBE.Postgres.DDL;
 using Xunit;
 
 namespace Vivarni.CBE.Postgres.Test;

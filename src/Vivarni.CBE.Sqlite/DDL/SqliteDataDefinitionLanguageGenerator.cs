@@ -7,7 +7,7 @@ using Vivarni.CBE.DataStorage;
 
 namespace Vivarni.CBE.Sqlite.DDL;
 
-internal class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGenerator
+public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGenerator
 {
     public string GenerateDDL()
     {

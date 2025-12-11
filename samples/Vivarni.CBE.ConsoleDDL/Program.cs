@@ -26,7 +26,7 @@ internal class Program
         yield return ("SqlServer", new SqlServerDataDefinitionLanguageGenerator("dbo", "Vivarni"));
     }
 
-    static void PrintHeader(string title, string subtitle)
+    private static void PrintHeader(string title, string subtitle)
     {
         var width = Math.Max(Console.BufferWidth, 60);
         var top = "╔" + new string('═', width - 2) + "╗";
