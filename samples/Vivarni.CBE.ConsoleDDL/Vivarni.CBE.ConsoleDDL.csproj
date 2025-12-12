@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Vivarni.CBE.Oracle\Vivarni.CBE.Oracle.csproj" />
     <ProjectReference Include="..\..\src\Vivarni.CBE.Sqlite\Vivarni.CBE.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\Vivarni.CBE.SqlServer\Vivarni.CBE.SqlServer.csproj" />
     <ProjectReference Include="..\..\src\Vivarni.CBE.Postgres\Vivarni.CBE.Postgres.csproj" />

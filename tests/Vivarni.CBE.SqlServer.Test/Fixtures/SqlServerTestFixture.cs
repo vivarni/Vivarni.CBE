@@ -10,7 +10,6 @@ public class SqlServerTestFixture : IAsyncLifetime
     private readonly ILoggerFactory _loggerFactory;
     private readonly MsSqlContainer _sqlServerContainer = new MsSqlBuilder()
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
-        .WithPassword("Test123!")
         .WithCleanUp(true)
         .Build();
 

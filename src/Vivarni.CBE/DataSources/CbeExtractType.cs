@@ -1,6 +1,6 @@
 ﻿namespace Vivarni.CBE.DataSources;
 
-public enum CbeOpenDataFileType
+public enum CbeExtractType
 {
     Full,
     Update

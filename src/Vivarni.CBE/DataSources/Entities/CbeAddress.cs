@@ -1,46 +1,88 @@
 ﻿using System.ComponentModel.DataAnnotations;
+#pragma warning disable CS8618
 
 namespace Vivarni.CBE.DataSources.Entities;
 
 [CsvFileMapping("address")]
 public class CbeAddress : ICbeEntity
 {
+    /// <summary>
+    /// The establishment unit or enterprise number.
+    /// </summary>
     [CsvIndex(0), MaxLength(16), IndexColumn]
     public string EntityNumber { get; set; }
 
-    [CsvIndex(1)]
+    /// <summary>
+    /// Type of address.
+    /// </summary>
+    [CsvIndex(1), MaxLength(4)]
     public string TypeOfAddress { get; set; }
 
-    [CsvIndex(2)]
+    /// <summary>
+    /// Country (Dutch).
+    /// </summary>
+    [CsvIndex(2), MaxLength(100)]
     public string? CountryNL { get; set; }
 
-    [CsvIndex(3)]
+    /// <summary>
+    /// Country (French).
+    /// </summary>
+    [CsvIndex(3), MaxLength(100)]
     public string? CountryFR { get; set; }
 
-    [CsvIndex(4)]
+    /// <summary>
+    /// Zip code.
+    /// </summary>
+    [CsvIndex(4), MaxLength(20)]
     public string? Zipcode { get; set; }
 
-    [CsvIndex(5)]
+    /// <summary>
+    /// Municipality (Dutch).
+    /// </summary>
+    [CsvIndex(5), MaxLength(200)]
     public string? MunicipalityNL { get; set; }
 
-    [CsvIndex(6)]
+    /// <summary>
+    /// Municipality (French).
+    /// </summary>
+    [CsvIndex(6), MaxLength(200)]
     public string? MunicipalityFR { get; set; }
 
-    [CsvIndex(7)]
-    public string StreetNL { get; set; }
+    /// <summary>
+    /// Street (Dutch).
+    /// </summary>
+    [CsvIndex(7), MaxLength(200)]
+    public string? StreetNL { get; set; }
 
-    [CsvIndex(8)]
-    public string StreetFR { get; set; }
+    /// <summary>
+    /// Street (French).
+    /// </summary>
+    [CsvIndex(8), MaxLength(200)]
+    public string? StreetFR { get; set; }
 
-    [CsvIndex(9)]
-    public string HouseNumber { get; set; }
+    /// <summary>
+    /// House number.
+    /// </summary>
+    [CsvIndex(9), MaxLength(22)]
+    public string? HouseNumber { get; set; }
 
-    [CsvIndex(10)]
-    public string Box { get; set; }
+    /// <summary>
+    /// Box.
+    /// </summary>
+    [CsvIndex(10), MaxLength(20)]
+    public string? Box { get; set; }
 
-    [CsvIndex(11)]
-    public string ExtraAddressInfo { get; set; }
+    /// <summary>
+    /// Extra address information.
+    /// </summary>
+    [CsvIndex(11), MaxLength(80)]
+    public string? ExtraAddressInfo { get; set; }
 
+    /// <summary>
+    /// Date of striking off.
+    /// </summary>
     [CsvIndex(12)]
     public DateOnly? DateStrikingOff { get; set; }
 }
+
+#pragma warning restore CS8618

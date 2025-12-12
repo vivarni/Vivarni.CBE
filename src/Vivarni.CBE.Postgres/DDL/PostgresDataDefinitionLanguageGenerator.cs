@@ -86,7 +86,7 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
 
         // Handle nullable types
         var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-        var isNullable = Nullable.GetUnderlyingType(propertyType) != null || !propertyType.IsValueType;
+        var isNullable = new NullabilityInfoContext().Create(prop).WriteState == NullabilityState.Nullable;
 
         var sqlType = underlyingType.Name switch
         {
@@ -103,14 +103,13 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
             _ => "TEXT" // Default fallback
         };
 
-        var primaryKeySuffix = prop.GetCustomAttribute<PrimaryKeyColumn>() != null
-            ? " PRIMARY KEY"
-            : "";
-        var nullSuffix = isNullable && propertyType.IsValueType && Nullable.GetUnderlyingType(propertyType) != null
-            ? " NULL"
-            : " NOT NULL";
+        var constraints = new List<string>();
+        if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
+            constraints.Add("PRIMARY KEY");
 
-        return $"{sqlType}{nullSuffix}{primaryKeySuffix}";
+        if (!isNullable)
+            constraints.Add("NOT NULL");
+
+        return constraints.Count > 0 ? $"{sqlType} {string.Join(" ", constraints)}" : sqlType;
     }
-
 }

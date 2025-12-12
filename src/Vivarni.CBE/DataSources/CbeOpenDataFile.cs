@@ -5,9 +5,9 @@ public class CbeOpenDataFile : IEquatable<CbeOpenDataFile>
     public string Filename { get; }
     public string Source { get; private set; }
 
-    public DateOnly Date { get; private set; }
-    public int Number { get; private set; }
-    public CbeOpenDataFileType Type { get; private set; }
+    public DateOnly SnapshotDate { get; private set; }
+    public int ExtractNumber { get; private set; }
+    public CbeExtractType ExtractType { get; private set; }
 
     public CbeOpenDataFile(string source)
     {
@@ -31,7 +31,7 @@ public class CbeOpenDataFile : IEquatable<CbeOpenDataFile>
         if (!int.TryParse(parts[1], out var number))
             throw new ArgumentException($"Invalid number format in filename: {parts[1]}");
 
-        if (!Enum.TryParse<CbeOpenDataFileType>(parts[5], ignoreCase: true, out var type))
+        if (!Enum.TryParse<CbeExtractType>(parts[5], ignoreCase: true, out var type))
             throw new ArgumentException($"Invalid file type in filename: {parts[5]}. Expected 'Full' or 'Update'");
 
         // Parse date (year_month_day)
@@ -44,15 +44,15 @@ public class CbeOpenDataFile : IEquatable<CbeOpenDataFile>
 
         try
         {
-            Date = new DateOnly(year, month, day);
+            SnapshotDate = new DateOnly(year, month, day);
         }
         catch (ArgumentOutOfRangeException ex)
         {
             throw new ArgumentException($"Invalid date in filename: {year}-{month}-{day}", ex);
         }
 
-        Number = number;
-        Type = type;
+        ExtractNumber = number;
+        ExtractType = type;
     }
 
     public override string ToString()

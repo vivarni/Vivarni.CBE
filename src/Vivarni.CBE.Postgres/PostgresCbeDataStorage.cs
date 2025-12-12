@@ -162,7 +162,7 @@ internal class PostgresCbeDataStorage
 
         // 3) Create one parameter per ID
         var paramNames = new string[ids.Count];
-        for (int i = 0; i < ids.Count; i++)
+        for (var i = 0; i < ids.Count; i++)
         {
             var pName = $"@p{i}";
             paramNames[i] = pName;
@@ -195,7 +195,7 @@ internal class PostgresCbeDataStorage
 
         // Handle common conversions (string -> Guid/int/long, etc.)
         if (nonNullType == typeof(Guid))
-            return value is Guid g ? g : Guid.Parse(value.ToString());
+            return value is Guid g ? g : Guid.Parse(value.ToString()!);
 
         if (nonNullType == typeof(int))
             return value is int i ? i : Convert.ToInt32(value);
@@ -219,7 +219,7 @@ internal class PostgresCbeDataStorage
             return value is DateTime dt ? dt : Convert.ToDateTime(value);
 
         if (nonNullType == typeof(string))
-            return value.ToString();
+            return value.ToString()!;
 
         // Last resort
         return value;

@@ -71,9 +71,8 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         var propertyType = prop.PropertyType;
         var isPrimaryKey = prop.GetCustomAttribute<PrimaryKeyColumn>() != null;
 
-        // Handle nullable types
         var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-        var isNullable = Nullable.GetUnderlyingType(propertyType) != null || !propertyType.IsValueType;
+        var isNullable = new NullabilityInfoContext().Create(prop).WriteState == NullabilityState.Nullable;
 
         var sqlType = underlyingType.Name switch
         {
@@ -90,7 +89,6 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         };
 
         var constraints = new List<string>();
-
         if (isPrimaryKey)
             constraints.Add("PRIMARY KEY");
 
