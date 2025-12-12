@@ -29,16 +29,16 @@ internal class PostgresDatabaseObjectNameProvider
 
         var sb = new StringBuilder();
 
-        for (int i = 0; i < input.Length; i++)
+        for (var i = 0; i < input.Length; i++)
         {
-            char c = input[i];
+            var c = input[i];
 
             // If current character is uppercase and not the first character
             if (char.IsUpper(c) && i > 0)
             {
                 // Add underscore before uppercase letter, but only if the previous character
                 // is not already an underscore or uppercase
-                char prevChar = input[i - 1];
+                var prevChar = input[i - 1];
                 if (prevChar != '_' && !char.IsUpper(prevChar))
                 {
                     sb.Append('_');
@@ -73,9 +73,9 @@ internal class PostgresDatabaseObjectNameProvider
 
         // Replace invalid characters with underscore
         var chars = s.ToCharArray();
-        for (int i = 0; i < chars.Length; i++)
+        for (var i = 0; i < chars.Length; i++)
         {
-            char ch = chars[i];
+            var ch = chars[i];
             if (!(ch >= 'a' && ch <= 'z') &&
                 !(ch >= '0' && ch <= '9') &&
                 ch != '_')

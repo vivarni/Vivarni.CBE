@@ -54,7 +54,7 @@ internal class SqliteCbeDataStorage
             {
                 // Create parameters for all properties
                 var parameters = new SqliteParameter[properties.Length];
-                for (int i = 0; i < properties.Length; i++)
+                for (var i = 0; i < properties.Length; i++)
                 {
                     var prop = properties[i];
                     var parameter = command.CreateParameter();
@@ -66,7 +66,7 @@ internal class SqliteCbeDataStorage
                 // Insert each entity in the batch
                 foreach (var entity in batch)
                 {
-                    for (int i = 0; i < properties.Length; i++)
+                    for (var i = 0; i < properties.Length; i++)
                     {
                         var value = properties[i].GetValue(entity);
                         parameters[i].Value = value ?? DBNull.Value;
