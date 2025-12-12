@@ -51,7 +51,7 @@ internal class PostgresCbeDataStorage
     }
 
     public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var totalImportCount = 0;
         var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
@@ -125,7 +125,7 @@ internal class PostgresCbeDataStorage
     }
 
     public async Task ClearAsync<T>(CancellationToken cancellationToken)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
 
@@ -145,7 +145,7 @@ internal class PostgresCbeDataStorage
         IEnumerable<object> entityIds,
         PropertyInfo deleteOnProperty,
         CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         // 1) Materialize IDs and short-circuit if empty
         var ids = entityIds?.ToList() ?? [];

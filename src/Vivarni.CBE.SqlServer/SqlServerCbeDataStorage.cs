@@ -46,7 +46,7 @@ internal class SqlServerCbeDataStorage
     }
 
     public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var totalImportCount = 0;
         var tableName = $"[{_schema}].[{_tablePrefix + typeof(T).Name}]";
@@ -83,7 +83,7 @@ internal class SqlServerCbeDataStorage
     }
 
     public async Task ClearAsync<T>(CancellationToken cancellationToken)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var tableName = $"[{_schema}].[{_tablePrefix + typeof(T).Name}]";
         using var conn = new SqlConnection(_connectionString);
@@ -98,11 +98,8 @@ internal class SqlServerCbeDataStorage
         _logger.LogDebug("Truncated {TableName}", tableName);
     }
 
-    public async Task<int> RemoveAsync<T>(
-        IEnumerable<object> entityIds,
-        PropertyInfo deleteOnProperty,
-        CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+    public async Task<int> RemoveAsync<T>(IEnumerable<object> entityIds, PropertyInfo deleteOnProperty, CancellationToken cancellationToken = default)
+        where T : class, ICbeEntity
     {
         // 1) Materialize IDs and short-circuit if empty
         var ids = entityIds?.ToList() ?? [];

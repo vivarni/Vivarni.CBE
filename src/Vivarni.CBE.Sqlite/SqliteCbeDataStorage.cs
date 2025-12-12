@@ -28,7 +28,7 @@ internal class SqliteCbeDataStorage
     }
 
     public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var totalImportCount = 0;
         var entityType = typeof(T);
@@ -89,7 +89,7 @@ internal class SqliteCbeDataStorage
     }
 
     public async Task ClearAsync<T>(CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(typeof(T).Name);
         using var conn = new SqliteConnection(_connectionString);
@@ -117,7 +117,7 @@ internal class SqliteCbeDataStorage
     }
 
     public async Task<int> RemoveAsync<T>(IEnumerable<object> entityIds, PropertyInfo deleteOnProperty, CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         using var conn = new SqliteConnection(_connectionString);
         using var command = conn.CreateCommand();

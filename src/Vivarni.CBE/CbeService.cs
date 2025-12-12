@@ -207,7 +207,7 @@ internal class CbeService : ICbeService
     }
 
     private async Task InsertCsvRecordsGeneric<T>(ZipArchiveEntry zipEntry, bool truncateFirst)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         using var sr = new StreamReader(zipEntry.Open(), Encoding.UTF8, true);
         using var csv = CreateCsvReader(sr);
