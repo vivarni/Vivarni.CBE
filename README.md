@@ -1,6 +1,6 @@
 # Vivarni.CBE
 
-A simple, practical solution to import and synchronize KBO/BCE/CBE data into your own database (e.g., SQL Server, Postgres, Sqlite, ...). It provides clear source abstractions, extensible storage backends, and synchronization state tracking so your enterprise registers stay reliably up to date. CBE stands for Belgium’s Crossroads Bank for Enterprises and is also known as:
+A simple, practical solution to import and synchronize KBO/BCE/CBE data into your own database (e.g., SQL Server, Postgres, Sqlite, Oracle, ...). It provides clear source abstractions, extensible storage backends, and synchronization state tracking so your enterprise registers stay reliably up to date. CBE stands for Belgium’s Crossroads Bank for Enterprises and is also known as:
 
  * Dutch: _Kruispuntbank van Ondernemingen_ 
  * French: _Banque-Carrefour des Entreprises_
@@ -32,6 +32,7 @@ dotnet add package Vivarni.CBE
 dotnet add package Vivarni.CBE.SqlServer # if you're using SQL Server
 dotnet add package Vivarni.CBE.Postgres  # if you're using Postgres
 dotnet add package Vivarni.CBE.Sqlite    # if you're using Sqlite
+dotnet add package Vivarni.CBE.Oracle    # if you're using Oracle
 ```
 
 ### 3. Example (Sqlite)
