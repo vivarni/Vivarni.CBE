@@ -1,12 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
+#pragma warning disable CS8618
 
 namespace Vivarni.CBE.DataSources.Entities;
 
-
 /// <summary>
-/// Represents an establishment unit (business unit) as defined in the KBO Open Data export.
-/// An establishment is a geographically distinct unit where at least one activity of the enterprise is carried out.
+/// Represents an establishment unit (business unit) as defined in the KBO Open Data export. An
+/// establishment is a geographically distinct unit where at least one activity of the enterprise is carried
+/// out.
 /// </summary>
 [CsvFileMapping("establishment")]
 internal class CbeEstablishment : ICbeEntity
@@ -29,3 +29,5 @@ internal class CbeEstablishment : ICbeEntity
     [CsvIndex(2), MaxLength(16), IndexColumn]
     public string EnterpriseNumber { get; set; }
 }
+
+#pragma warning restore CS8618

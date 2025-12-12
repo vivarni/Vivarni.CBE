@@ -1,12 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
+#pragma warning disable CS8618
 
 namespace Vivarni.CBE.DataSources.Entities;
 
-
 /// <summary>
 /// Represents an enterprise (legal entity or natural person) as defined in the KBO Open Data export.
-/// Contains core information about the company or self-employed person registered in the Belgian Crossroads Bank for Enterprises (KBO).
+/// Contains core information about the company or self-employed person registered in the Belgian
+/// Crossroads Bank for Enterprises (KBO).
 /// </summary>
 [CsvFileMapping("enterprise")]
 public class CbeEnterprise : ICbeEntity
@@ -24,7 +24,7 @@ public class CbeEnterprise : ICbeEntity
     public string Status { get; set; }
 
     /// <summary>
-    /// The juridical situation of the enterprise (e.g., 'In liquidation', 'Bankrupt', etc.).
+    /// The legal situation of the enterprise (e.g., 'In liquidation', 'Bankrupt', etc.).
     /// </summary>
     [CsvIndex(2), MaxLength(3)]
     public string JuridicalSituation { get; set; }
@@ -36,20 +36,25 @@ public class CbeEnterprise : ICbeEntity
     public char TypeOfEnterprise { get; set; }
 
     /// <summary>
-    /// The legal form of the enterprise (e.g., 'NV', 'BVBA', etc.), if available.
+    /// The legal form of the entity, if it is a legal entity. See code table. (Examples: 'NV', 'BVBA', etc.)
     /// </summary>
     [CsvIndex(4), MaxLength(3)]
     public string? JuridicalForm { get; set; }
 
     /// <summary>
-    /// The legal form code (CAC) of the enterprise, if available.
+    /// Contains the legal form as it should be interpreted, pending the adjustment of the statutes in
+    /// accordance with the Belgian Companies and Associations Code (WVV).
     /// </summary>
     [CsvIndex(5), MaxLength(3)]
     public string? JuridicalFormCAC { get; set; }
 
     /// <summary>
-    /// The date when the enterprise was registered or started its activities.
+    /// The start date of the entity. For legal entities, this is the start date of the first legal status with
+    /// status 'published' or 'active'. For natural persons, this is the start date of the last period in which
+    /// the entity is in status 'published' or 'active'.
     /// </summary>
     [CsvIndex(6)]
     public DateOnly StartDate { get; set; }
 }
+
+#pragma warning restore CS8618
