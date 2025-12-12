@@ -4,7 +4,6 @@ namespace Vivarni.CBE.Oracle.DDL;
 
 internal class OracleDatabaseObjectNameProvider
 {
-    // Oracle reserved keywords - comprehensive list for Oracle Database
     private static readonly HashSet<string> s_reserved = new(StringComparer.OrdinalIgnoreCase)
     {
         "ACCESS", "ADD", "ALL", "ALTER", "AND", "ANY", "AS", "ASC", "AUDIT", "BETWEEN", "BY", "CHAR", "CHECK", 
@@ -25,7 +24,7 @@ internal class OracleDatabaseObjectNameProvider
         if (string.IsNullOrWhiteSpace(input))
             throw new ArgumentException("Input cannot be null or empty.", nameof(input));
 
-        // Convert PascalCase to Oracle-style UPPER_CASE
+        // Convert C# PascalCase to Oracle-style UPPER_CASE
         var upperCase = ConvertToOracleCase(input);
 
         return Normalize(upperCase);
