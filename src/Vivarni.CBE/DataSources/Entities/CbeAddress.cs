@@ -27,19 +27,19 @@ public class CbeAddress : ICbeEntity
     public string? MunicipalityFR { get; set; }
 
     [CsvIndex(7)]
-    public string StreetNL { get; set; }
+    public string? StreetNL { get; set; }
 
     [CsvIndex(8)]
-    public string StreetFR { get; set; }
+    public string? StreetFR { get; set; }
 
     [CsvIndex(9)]
-    public string HouseNumber { get; set; }
+    public string? HouseNumber { get; set; }
 
     [CsvIndex(10)]
-    public string Box { get; set; }
+    public string? Box { get; set; }
 
     [CsvIndex(11)]
-    public string ExtraAddressInfo { get; set; }
+    public string? ExtraAddressInfo { get; set; }
 
     [CsvIndex(12)]
     public DateOnly? DateStrikingOff { get; set; }

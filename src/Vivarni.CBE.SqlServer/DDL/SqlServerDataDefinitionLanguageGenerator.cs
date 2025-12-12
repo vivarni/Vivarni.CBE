@@ -90,9 +90,8 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
         var maxMaxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length.ToString() ?? "MAX";
         var propertyType = prop.PropertyType;
 
-        // Handle nullable types
         var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-        var isNullable = Nullable.GetUnderlyingType(propertyType) != null || !propertyType.IsValueType;
+        var isNullable = new NullabilityInfoContext().Create(prop).WriteState == NullabilityState.Nullable;
 
         var sqlType = underlyingType.Name switch
         {
@@ -108,13 +107,14 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
             _ => "NVARCHAR(MAX)" // Default fallback
         };
 
-        var primaryKeySuffix = prop.GetCustomAttribute<PrimaryKeyColumn>() != null
-            ? " primary key"
-            : "";
-        var nullSuffix = isNullable && propertyType.IsValueType && Nullable.GetUnderlyingType(propertyType) != null
-            ? $" NULL"
-            : $" NOT NULL";
+        var constraints = new List<string>();
 
-        return $"{sqlType}{nullSuffix}{primaryKeySuffix}";
+        if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
+            constraints.Add("primary key");
+
+        if (isNullable)
+            constraints.Add("not null");
+
+        return constraints.Count > 0 ? $"{sqlType} {string.Join(" ", constraints)}" : sqlType;
     }
 }
