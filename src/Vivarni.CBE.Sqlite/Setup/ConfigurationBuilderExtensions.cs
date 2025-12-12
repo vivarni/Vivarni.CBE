@@ -5,7 +5,7 @@ namespace Vivarni.CBE.Sqlite.Setup;
 
 public static class ConfigurationBuilderExtensions
 {
-    public static VivarniCbeOptions WithSqliteDatabase(this VivarniCbeOptions builder, string connectionString)
+    public static VivarniCbeOptions UseSqliteDatabase(this VivarniCbeOptions builder, string connectionString)
     {
         builder.DataStorageFactory = (s) =>
         {

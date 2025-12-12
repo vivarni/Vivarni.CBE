@@ -42,7 +42,7 @@ public class VivarniCbeOptions
     public Func<IServiceProvider, ICbeDataSource>? DataSourceCacheFactory { get; set; }
     public Func<IServiceProvider, ICbeStateRegistry>? SynchronisationStateRegistryFactory { get; set; }
 
-    public VivarniCbeOptions WithHttpSource(string userName, string password)
+    public VivarniCbeOptions UseHttpSource(string userName, string password)
     {
         var credentialProvider = new SimpleCredentialProvider(userName, System.Text.Encoding.UTF8.GetBytes(password));
         var cbeDataSource = new HttpCbeDataSource(credentialProvider);
@@ -51,7 +51,7 @@ public class VivarniCbeOptions
         return this;
     }
 
-    public VivarniCbeOptions WithFileSystemCache(string path)
+    public VivarniCbeOptions UseFileSystemCache(string path)
     {
         DataSourceCacheFactory = (s) => new FileSystemCbeDataSource(path);
         return this;

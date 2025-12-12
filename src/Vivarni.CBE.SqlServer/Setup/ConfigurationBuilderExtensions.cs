@@ -5,7 +5,7 @@ namespace Vivarni.CBE.SqlServer.Setup;
 
 public static class ConfigurationBuilderExtensions
 {
-    public static VivarniCbeOptions WithSqlServer(this VivarniCbeOptions builder, string connectionString, string schema = "dbo", string tablePrefix = "")
+    public static VivarniCbeOptions UseSqlServer(this VivarniCbeOptions builder, string connectionString, string schema = "dbo", string tablePrefix = "")
     {
         builder.DataStorageFactory = (s) =>
         {

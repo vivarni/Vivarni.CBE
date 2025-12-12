@@ -31,8 +31,8 @@ internal class Program
                 .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
-                    .WithSqliteDatabase(connectionString)
-                    .WithFileSystemCache("c:/temp/kbo-files"))
+                    .UseSqliteDatabase(connectionString)
+                    .UseFileSystemCache("c:/temp/kbo-files"))
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
