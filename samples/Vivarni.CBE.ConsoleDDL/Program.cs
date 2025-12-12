@@ -11,11 +11,17 @@ internal class Program
     public static async Task Main()
     {
         var collection = EnumerateGenerators();
+        var directory = Path.GetFullPath("../../../../../dist/");
+        Directory.CreateDirectory(Path.GetDirectoryName(directory)!);
+
+        Console.WriteLine("Generating SQL scripts with DDL statements:");
         foreach (var (databaseName, ddl) in collection)
         {
             var sql = ddl.GenerateDDL();
-            PrintHeader(databaseName, "SQL Statements to prepare a database for CBE data");
-            Console.WriteLine(sql);
+            var destination = Path.GetFullPath($"{directory}/{databaseName}.sql");
+
+            await File.WriteAllTextAsync(destination, sql);
+            Console.WriteLine($"  - \u001b[4m{destination}\u001b[0m");
         }
     }
 
