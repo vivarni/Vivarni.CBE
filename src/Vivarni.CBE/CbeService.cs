@@ -45,19 +45,19 @@ internal class CbeService : ICbeService
         var processedFiles = (await _applicationStateRepository.GetProcessedFiles(cancellationToken)).ToList();
         var onlineFiles = await _source.GetOpenDataFilesAsync(cancellationToken);
 
-        var highestProcessedNumber = processedFiles.Select(s => s.Number).Union([-1]).Max();
-        var highestOnlineNumber = onlineFiles.Max(s => s.Number);
+        var highestProcessedNumber = processedFiles.Select(s => s.ExtractNumber).Union([-1]).Max();
+        var highestOnlineNumber = onlineFiles.Max(s => s.ExtractNumber);
 
         // Sort online files by number (ascending)
-        var sortedOnlineFiles = onlineFiles.OrderBy(f => f.Number).ToList();
+        var sortedOnlineFiles = onlineFiles.OrderBy(f => f.ExtractNumber).ToList();
 
         // Execute a FULL import if we've never done it before
-        if (processedFiles.Count == 0 || !processedFiles.Any(s => s.Type == CbeOpenDataFileType.Full))
+        if (processedFiles.Count == 0 || !processedFiles.Any(s => s.ExtractType == CbeExtractType.Full))
         {
             _logger.LogInformation("Executing full sync with latest FULL file.");
             var full = sortedOnlineFiles
-                .Where(f => f.Type == CbeOpenDataFileType.Full)
-                .OrderByDescending(f => f.Number)
+                .Where(f => f.ExtractType == CbeExtractType.Full)
+                .OrderByDescending(f => f.ExtractNumber)
                 .First();
 
             await ExecuteFullSync(full, cancellationToken);
@@ -80,8 +80,8 @@ internal class CbeService : ICbeService
         {
             _logger.LogWarning("Inconsistency detected in processed files. Performing FULL sync to ensure data integrity.");
             var full = sortedOnlineFiles
-                .Where(f => f.Type == CbeOpenDataFileType.Full)
-                .OrderByDescending(f => f.Number)
+                .Where(f => f.ExtractType == CbeExtractType.Full)
+                .OrderByDescending(f => f.ExtractNumber)
                 .First();
 
             await ExecuteFullSync(full, cancellationToken);
@@ -93,7 +93,7 @@ internal class CbeService : ICbeService
 
         // Evaluate the UPDATE files and see if there are any missing numbers.
         var missingNumbers = Enumerable.Range(highestProcessedNumber + 1, highestOnlineNumber - highestProcessedNumber)
-            .Where(number => !sortedOnlineFiles.Any(f => f.Number == number && f.Type == CbeOpenDataFileType.Update))
+            .Where(number => !sortedOnlineFiles.Any(f => f.ExtractNumber == number && f.ExtractType == CbeExtractType.Update))
             .ToHashSet();
 
         // Scenario 2b: Missing numbers, we need a FULL import
@@ -101,8 +101,8 @@ internal class CbeService : ICbeService
         {
             _logger.LogInformation("Missing UPDATE file numbers detected: {MissingNumbers}. Falling back to FULL sync.", string.Join(", ", missingNumbers));
             var full = sortedOnlineFiles
-                .Where(f => f.Type == CbeOpenDataFileType.Full)
-                .OrderByDescending(f => f.Number)
+                .Where(f => f.ExtractType == CbeExtractType.Full)
+                .OrderByDescending(f => f.ExtractNumber)
                 .First();
 
             await ExecuteFullSync(full, cancellationToken);
@@ -119,8 +119,8 @@ internal class CbeService : ICbeService
                 highestProcessedNumber + 1, highestOnlineNumber);
 
             var updateFiles = sortedOnlineFiles
-                .Where(f => f.Type == CbeOpenDataFileType.Update && f.Number > highestProcessedNumber)
-                .OrderBy(f => f.Number)
+                .Where(f => f.ExtractType == CbeExtractType.Update && f.ExtractNumber > highestProcessedNumber)
+                .OrderBy(f => f.ExtractNumber)
                 .ToList();
 
             foreach (var updateFile in updateFiles)
@@ -261,15 +261,15 @@ internal class CbeService : ICbeService
 
     private bool DetectProcessedFilesInconsistency(List<CbeOpenDataFile> processedFiles)
     {
-        var latestFull = processedFiles.Where(f => f.Type == CbeOpenDataFileType.Full).MaxBy(f => f.Number);
+        var latestFull = processedFiles.Where(f => f.ExtractType == CbeExtractType.Full).MaxBy(f => f.ExtractNumber);
         if (latestFull == null) return false;
 
-        var expected = latestFull.Number + 1;
-        foreach (var update in processedFiles.Where(f => f.Type == CbeOpenDataFileType.Update && f.Number > latestFull.Number).OrderBy(f => f.Number))
+        var expected = latestFull.ExtractNumber + 1;
+        foreach (var update in processedFiles.Where(f => f.ExtractType == CbeExtractType.Update && f.ExtractNumber > latestFull.ExtractNumber).OrderBy(f => f.ExtractNumber))
         {
-            if (update.Number != expected++)
+            if (update.ExtractNumber != expected++)
             {
-                _logger.LogWarning("Gap detected: missing files {Start}-{End}", expected - 1, update.Number - 1);
+                _logger.LogWarning("Gap detected: missing files {Start}-{End}", expected - 1, update.ExtractNumber - 1);
                 return true;
             }
         }

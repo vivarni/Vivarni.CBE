@@ -10,7 +10,7 @@ public class CbeDenomination : ICbeEntity
     /// Foreign key to the [code] table WHERE category = 'Language'.
     /// </summary>
     [CsvIndex(1)] public byte Language { get; set; }
-    [CsvIndex(2)] public string TypeOfDenomination { get; set; }
-    [CsvIndex(3)] public string Denomination { get; set; }
+    [CsvIndex(2), MaxLength(3)] public string TypeOfDenomination { get; set; }
+    [CsvIndex(3), MaxLength(320)] public string Denomination { get; set; }
 }
 
