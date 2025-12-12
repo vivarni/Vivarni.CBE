@@ -12,7 +12,7 @@ internal class Program
         // Configure Serilog for minimal output
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
-            .MinimumLevel.Information()
+            .MinimumLevel.Debug()
             .CreateLogger();
 
         try
@@ -32,7 +32,7 @@ internal class Program
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
                     .UseSqliteDatabase(connectionString)
-                    .UseFileSystemCache("c:/temp/kbo-files"))
+                    .UseFileSystemCache("c:/temp/kbo-light"))
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
