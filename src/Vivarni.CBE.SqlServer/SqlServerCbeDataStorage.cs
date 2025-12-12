@@ -15,6 +15,7 @@ internal class SqlServerCbeDataStorage
     , ICbeStateRegistry
 {
     private const int INSERT_BATCH_SIZE = 100_000;
+    private static readonly JsonSerializerOptions s_jsonSettings = new() { WriteIndented = true };
 
     private readonly string _connectionString;
     private readonly string _schema;
@@ -104,7 +105,7 @@ internal class SqlServerCbeDataStorage
         where T : ICbeEntity
     {
         // 1) Materialize IDs and short-circuit if empty
-        var ids = entityIds?.ToList() ?? new List<object>();
+        var ids = entityIds?.ToList() ?? [];
         if (ids.Count == 0)
             return 0;
 
@@ -120,7 +121,7 @@ internal class SqlServerCbeDataStorage
 
         // 3) Create one parameter per ID
         var paramNames = new string[ids.Count];
-        for (int i = 0; i < ids.Count; i++)
+        for (var i = 0; i < ids.Count; i++)
         {
             var pName = $"@p{i}";
             paramNames[i] = pName;
@@ -160,7 +161,7 @@ internal class SqlServerCbeDataStorage
 
         // Handle common conversions (string -> Guid/int/long, etc.)
         if (nonNullType == typeof(Guid))
-            return value is Guid g ? g : Guid.Parse(value.ToString());
+            return value is Guid g ? g : Guid.Parse(value.ToString()!);
 
         if (nonNullType == typeof(int))
             return value is int i ? i : Convert.ToInt32(value);
@@ -184,7 +185,7 @@ internal class SqlServerCbeDataStorage
             return value is DateTime dt ? dt : Convert.ToDateTime(value);
 
         if (nonNullType == typeof(string))
-            return value.ToString();
+            return value.ToString()!;
 
         // Last resort
         return value;
@@ -194,7 +195,7 @@ internal class SqlServerCbeDataStorage
     {
         const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
         var tableName = $"[{_schema}].[{_tablePrefix}StateRegistry]";
-        
+
         using var conn = new SqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
         using var command = conn.CreateCommand();
@@ -209,7 +210,7 @@ internal class SqlServerCbeDataStorage
 
         if (string.IsNullOrEmpty(result))
         {
-            return Enumerable.Empty<CbeOpenDataFile>();
+            return [];
         }
 
         var list = JsonSerializer.Deserialize<List<string>>(result) ?? [];
@@ -220,21 +221,21 @@ internal class SqlServerCbeDataStorage
     {
         const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
         var tableName = $"[{_schema}].[{_tablePrefix}StateRegistry]";
-        
+
         using var conn = new SqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
 
         var data = processedFiles.Select(s => s.Filename);
-        var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(data, s_jsonSettings);
 
-        const string upsertQuery = @"
+        const string UpsertQuery = @"
                 IF EXISTS (SELECT 1 FROM {0} WHERE [Variable] = @Variable)
                     UPDATE {0} SET [Value] = @Value WHERE [Variable] = @Variable
                 ELSE
                     INSERT INTO {0} ([Variable], [Value]) VALUES (@Variable, @Value)";
 
         using var command = conn.CreateCommand();
-        command.CommandText = string.Format(upsertQuery, tableName);
+        command.CommandText = string.Format(UpsertQuery, tableName);
 
         var variableParam = command.CreateParameter();
         variableParam.ParameterName = "@Variable";

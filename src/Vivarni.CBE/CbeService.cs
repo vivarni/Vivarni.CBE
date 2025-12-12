@@ -227,7 +227,7 @@ internal class CbeService : ICbeService
         csv.Read();
         csv.ReadHeader();
 
-        var headers = csv.Context.Reader.HeaderRecord;
+        var headers = csv.Context.Reader?.HeaderRecord;
         if (headers?.Length != 1)
             throw new Exception("The file contains more than one column.");
 
