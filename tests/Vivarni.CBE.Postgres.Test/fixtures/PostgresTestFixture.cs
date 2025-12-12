@@ -10,9 +10,6 @@ public class PostgresTestFixture : IAsyncLifetime
 {
     private readonly ILoggerFactory _loggerFactory;
     private readonly PostgreSqlContainer _postgreSqlContainer = new PostgreSqlBuilder()
-        .WithDatabase("test_db")
-        .WithUsername("test_user")
-        .WithPassword("test_password")
         .WithCleanUp(true)
         .Build();
 

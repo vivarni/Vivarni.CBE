@@ -12,8 +12,6 @@ public class OracleTestFixture : IAsyncLifetime
     private readonly OracleContainer _oracleContainer = new OracleBuilder()
         .WithImage("gvenzl/oracle-xe:21.3.0-slim-faststart")
         .WithCleanUp(true)
-        .WithUsername("test_user")
-        .WithPassword("test_password")
         .Build();
 
     public OracleTestFixture()
