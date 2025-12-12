@@ -4,7 +4,7 @@
 namespace Vivarni.CBE.DataSources.Entities;
 
 [CsvFileMapping("activity")]
-internal class CbeActivity : ICbeEntity
+public class CbeActivity : ICbeEntity
 {
     /// <summary>
     /// The establishment unit or enterprise number.

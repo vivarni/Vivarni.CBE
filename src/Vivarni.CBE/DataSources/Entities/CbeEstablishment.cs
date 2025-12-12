@@ -9,7 +9,7 @@ namespace Vivarni.CBE.DataSources.Entities;
 /// out.
 /// </summary>
 [CsvFileMapping("establishment")]
-internal class CbeEstablishment : ICbeEntity
+public class CbeEstablishment : ICbeEntity
 {
     /// <summary>
     /// Unique identifier for the establishment (business unit) as registered in the KBO.

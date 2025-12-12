@@ -8,7 +8,7 @@ namespace Vivarni.CBE.DataSources.Entities;
 /// dataset, such as version, creation date, and other metadata variables.
 /// </summary>
 [CsvFileMapping("meta")]
-internal class CbeMeta : ICbeEntity
+public class CbeMeta : ICbeEntity
 {
     /// <summary>
     /// The name of the metadata variable (e.g., 'Version', 'CreationDate', etc.).
