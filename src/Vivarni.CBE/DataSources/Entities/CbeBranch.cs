@@ -8,6 +8,7 @@ public class CbeBranch : ICbeEntity
 {
     /// <summary>
     /// The id can be used to identify a branch office.
+    /// This identifier is not an official number! It cannot be used for any search in another public CBE search.
     /// </summary>
     [CsvIndex(0), MaxLength(16), PrimaryKeyColumn]
     public string Id { get; set; }
