@@ -1,4 +1,6 @@
 ﻿using Vivarni.CBE.DataStorage;
+using Vivarni.CBE.Oracle.DDL;
+using Vivarni.CBE.Oracle.Setup;
 using Vivarni.CBE.Postgres.DDL;
 using Vivarni.CBE.Postgres.Setup;
 using Vivarni.CBE.Sqlite.DDL;
@@ -30,19 +32,6 @@ internal class Program
         yield return ("Sqlite", new SqliteDataDefinitionLanguageGenerator());
         yield return ("Postgres", new PostgresDataDefinitionLanguageGenerator(new PostgresCbeOptions()));
         yield return ("SqlServer", new SqlServerDataDefinitionLanguageGenerator("dbo", "Vivarni"));
-    }
-
-    private static void PrintHeader(string title, string subtitle)
-    {
-        var width = Math.Max(Console.BufferWidth, 60);
-        var top = "╔" + new string('═', width - 2) + "╗";
-        var bottom = "╚" + new string('═', width - 2) + "╝";
-        var titleLine = "║  " + title.PadRight(width - 4) + "║";
-        var subtitleLine = "║  " + subtitle.PadRight(width - 4) + "║";
-        Console.WriteLine(top);
-        Console.WriteLine(titleLine);
-        Console.WriteLine(subtitleLine);
-        Console.WriteLine(bottom);
-        Console.WriteLine();
+        yield return ("Oracle", new OracleDataDefinitionLanguageGenerator(new OracleCbeOptions()));
     }
 }
