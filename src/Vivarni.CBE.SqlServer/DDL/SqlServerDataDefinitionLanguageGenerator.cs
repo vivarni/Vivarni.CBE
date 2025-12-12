@@ -112,7 +112,7 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
         if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
             constraints.Add("primary key");
 
-        if (isNullable)
+        if (!isNullable)
             constraints.Add("not null");
 
         return constraints.Count > 0 ? $"{sqlType} {string.Join(" ", constraints)}" : sqlType;

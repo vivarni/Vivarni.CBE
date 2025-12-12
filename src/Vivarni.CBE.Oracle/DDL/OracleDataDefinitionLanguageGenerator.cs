@@ -71,7 +71,7 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
             var columnDefinitions = new List<string>();
             foreach (var prop in properties)
             {
-                var columnName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + prop.Name);
+                var columnName = OracleDatabaseObjectNameProvider.GetObjectName(prop.Name);
                 var sqlType = GetOracleType(prop);
                 columnDefinitions.Add($"            {columnName} {sqlType}");
 

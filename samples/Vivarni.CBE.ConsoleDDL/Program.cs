@@ -14,7 +14,7 @@ internal class Program
     {
         var collection = EnumerateGenerators();
         var directory = Path.GetFullPath("../../../../../dist/");
-        Directory.CreateDirectory(Path.GetDirectoryName(directory)!);
+        Directory.CreateDirectory(directory);
 
         Console.WriteLine("Generating SQL scripts with DDL statements:");
         foreach (var (databaseName, ddl) in collection)

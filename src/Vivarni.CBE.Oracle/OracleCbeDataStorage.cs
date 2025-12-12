@@ -60,7 +60,7 @@ internal class OracleCbeDataStorage
         await connection.OpenAsync(cancellationToken);
 
         // Build INSERT statement with all columns
-        var columnNames = properties.Select(p => OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + p.Name));
+        var columnNames = properties.Select(p => OracleDatabaseObjectNameProvider.GetObjectName(p.Name));
         var parameterNames = properties.Select(p => $":{p.Name}");
         var insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnNames)}) VALUES ({string.Join(", ", parameterNames)})";
 
@@ -103,7 +103,7 @@ internal class OracleCbeDataStorage
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to import records into {TableName}", tableName);
-                await transaction.RollbackAsync();
+                await transaction.RollbackAsync(cancellationToken);
                 throw;
             }
         }
@@ -198,7 +198,7 @@ internal class OracleCbeDataStorage
         var json = JsonSerializer.Serialize(data, s_jsonSerializerOptions);
 
         // Oracle MERGE statement for upsert functionality
-        const string mergeQuery = @"
+        const string MergeQuery = @"
             MERGE INTO {0} target
             USING (SELECT :Variable as Variable, :Value as Value FROM dual) source
             ON (target.Variable = source.Variable)
@@ -208,7 +208,7 @@ internal class OracleCbeDataStorage
                 INSERT (Variable, Value) VALUES (source.Variable, source.Value)";
 
         using var command = conn.CreateCommand();
-        command.CommandText = string.Format(mergeQuery, tableName);
+        command.CommandText = string.Format(MergeQuery, tableName);
 
         var variableParam = command.CreateParameter();
         variableParam.ParameterName = "Variable";
@@ -234,7 +234,7 @@ internal class OracleCbeDataStorage
             nameof(Int32) => OracleDbType.Int32,
             nameof(Int64) => OracleDbType.Int64,
             nameof(Byte) => OracleDbType.Byte,
-            nameof(Boolean) => OracleDbType.Int16, // Oracle doesn't have native boolean
+            nameof(Boolean) => OracleDbType.Decimal, // Oracle doesn't have native boolean; NUMBER(1) is best mapped to Decimal
             nameof(Decimal) => OracleDbType.Decimal,
             nameof(Double) => OracleDbType.BinaryDouble,
             nameof(DateOnly) => OracleDbType.Date,
