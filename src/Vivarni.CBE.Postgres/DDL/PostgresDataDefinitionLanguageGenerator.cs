@@ -52,7 +52,7 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
                 columnDefinitions.Add($"    {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                if (prop.GetCustomAttribute<CbeIndexAttribute>() != null)
                 {
                     var indexName = $"IX_{type.Name}_{prop.Name}";
                     var indexStatement = $"CREATE INDEX IF NOT EXISTS {indexName} ON {_schema}.{tableName} ({columnName});";
@@ -107,8 +107,6 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
         };
 
         var constraints = new List<string>();
-        if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
-            constraints.Add("PRIMARY KEY");
 
         if (!isNullable)
             constraints.Add("NOT NULL");

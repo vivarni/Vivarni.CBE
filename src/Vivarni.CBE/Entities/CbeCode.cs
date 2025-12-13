@@ -1,9 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Vivarni.CBE.DataSources;
+
 #pragma warning disable CS8618
 
-namespace Vivarni.CBE.DataSources.Entities;
+namespace Vivarni.CBE.Entities;
 
 [CsvFileMapping("code")]
+[CbePrimaryKey(nameof(Code), nameof(Language), nameof(Category))]
 public class CbeCode : ICbeEntity
 {
     /// <summary>

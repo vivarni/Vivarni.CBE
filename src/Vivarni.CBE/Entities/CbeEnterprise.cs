@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Vivarni.CBE.DataSources;
+
 #pragma warning disable CS8618
 
-namespace Vivarni.CBE.DataSources.Entities;
+namespace Vivarni.CBE.Entities;
 
 /// <summary>
 /// Represents an enterprise (legal entity or natural person) as defined in the KBO Open Data export.
@@ -9,12 +11,13 @@ namespace Vivarni.CBE.DataSources.Entities;
 /// Crossroads Bank for Enterprises (KBO).
 /// </summary>
 [CsvFileMapping("enterprise")]
+[CbePrimaryKey(nameof(EnterpriseNumber))]
 public class CbeEnterprise : ICbeEntity
 {
     /// <summary>
     /// Unique identifier for the enterprise (company number) as registered in the KBO.
     /// </summary>
-    [CsvIndex(0), MaxLength(12), IndexColumn]
+    [CsvIndex(0), MaxLength(12), CbeIndex]
     public string EnterpriseNumber { get; set; }
 
     /// <summary>

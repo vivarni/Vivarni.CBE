@@ -76,7 +76,7 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                 columnDefinitions.Add($"            {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                if (prop.GetCustomAttribute<CbeIndexAttribute>() != null)
                 {
                     var indexName = OracleDatabaseObjectNameProvider.GetObjectName($"IX_{type.Name}_{prop.Name}");
                     var indexStatement = GenerateIndexStatement(indexName, tableName, columnName);
@@ -141,8 +141,6 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         };
 
         var constraints = new List<string>();
-        if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
-            constraints.Add("PRIMARY KEY");
 
         if (!isNullable)
             constraints.Add("NOT NULL");

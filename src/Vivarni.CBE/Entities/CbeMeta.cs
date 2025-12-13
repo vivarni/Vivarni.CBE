@@ -1,13 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Vivarni.CBE.DataSources;
+
 #pragma warning disable CS8618
 
-namespace Vivarni.CBE.DataSources.Entities;
+namespace Vivarni.CBE.Entities;
 
 /// <summary>
 /// Represents a metadata record from the KBO Open Data export. Contains general information about the
 /// dataset, such as version, creation date, and other metadata variables.
 /// </summary>
 [CsvFileMapping("meta")]
+[CbePrimaryKey(nameof(Variable))]
 public class CbeMeta : ICbeEntity
 {
     /// <summary>

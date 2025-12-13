@@ -34,7 +34,7 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                 columnDefinitions.Add($"    {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                if (prop.GetCustomAttribute<CbeIndexAttribute>() != null)
                 {
                     var indexName = SqliteDatabaseObjectNameProvider.QuoteIdentifier($"IX_{type.Name}_{prop.Name}");
                     var indexStatement = $"CREATE INDEX IF NOT EXISTS {indexName} ON {tableName} ({columnName});";
@@ -69,7 +69,6 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
     {
         var maxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
         var propertyType = prop.PropertyType;
-        var isPrimaryKey = prop.GetCustomAttribute<PrimaryKeyColumn>() != null;
 
         var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
         var isNullable = new NullabilityInfoContext().Create(prop).WriteState == NullabilityState.Nullable;
@@ -89,8 +88,6 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         };
 
         var constraints = new List<string>();
-        if (isPrimaryKey)
-            constraints.Add("PRIMARY KEY");
 
         if (!isNullable)
             constraints.Add("NOT NULL");

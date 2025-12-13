@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Vivarni.CBE.DataSources;
+
 #pragma warning disable CS8618
 
-namespace Vivarni.CBE.DataSources.Entities;
+namespace Vivarni.CBE.Entities;
 
 /// <summary>
 /// Represents an establishment unit (business unit) as defined in the KBO Open Data export. An
@@ -9,12 +11,13 @@ namespace Vivarni.CBE.DataSources.Entities;
 /// out.
 /// </summary>
 [CsvFileMapping("establishment")]
+[CbePrimaryKey(nameof(EstablishmentNumber))]
 public class CbeEstablishment : ICbeEntity
 {
     /// <summary>
     /// Unique identifier for the establishment (business unit) as registered in the KBO.
     /// </summary>
-    [CsvIndex(0), MaxLength(16), IndexColumn]
+    [CsvIndex(0), MaxLength(16), CbeIndex]
     public string EstablishmentNumber { get; set; }
 
     /// <summary>
@@ -26,7 +29,7 @@ public class CbeEstablishment : ICbeEntity
     /// <summary>
     /// The enterprise number (company number) to which this establishment belongs.
     /// </summary>
-    [CsvIndex(2), MaxLength(16), IndexColumn]
+    [CsvIndex(2), MaxLength(16), CbeIndex]
     public string EnterpriseNumber { get; set; }
 }
 

@@ -50,7 +50,7 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
                 sb.AppendLine($"    [{columnName}] {sqlType},");
 
                 // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                if (prop.GetCustomAttribute<CbeIndexAttribute>() != null)
                 {
                     var indexName = $"IX_{type.Name}_{prop.Name}";
                     var indexStatement = $"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = '{indexName}' AND object_id = OBJECT_ID('[{_schema}].[{tableName}]'))\n" +
@@ -108,9 +108,6 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
         };
 
         var constraints = new List<string>();
-
-        if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
-            constraints.Add("primary key");
 
         if (!isNullable)
             constraints.Add("not null");
