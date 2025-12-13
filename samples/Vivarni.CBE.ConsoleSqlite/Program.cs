@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Vivarni.CBE.Sqlite.Setup;
@@ -28,6 +29,7 @@ internal class Program
             var serviceProvider = new ServiceCollection()
                 .AddLogging(builder => builder.AddSerilog())
                 .AddSingleton<IConfiguration>(configuration)
+                .AddDbContext<SearchDbContext>()
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
                     .UseSqlite("Data Source=kbo.db")
