@@ -21,9 +21,13 @@ public static class ServiceCollectionExtensions
         if (options.SynchronisationStateRegistryFactory == null)
             throw new InvalidOperationException("Vivarni CBE: Missing data source configuration.");
 
+        if (options.DatabaseObjectNameProviderFactory != null)
+            services.AddScoped(options.DatabaseObjectNameProviderFactory);
+
+        services.AddScoped(options.SynchronisationStateRegistryFactory);
+        services.AddScoped(options.DataStorageFactory);
+
         services.AddScoped<ICbeService, CbeService>();
-        services.AddScoped<ICbeStateRegistry>(s => options.SynchronisationStateRegistryFactory(s));
-        services.AddScoped<ICbeDataStorage>(s => options.DataStorageFactory(s));
         services.AddScoped<ICbeDataSource>(s =>
         {
             var source = options.DataSourceFactory == null ? null : options.DataSourceFactory(s);
@@ -37,10 +41,14 @@ public static class ServiceCollectionExtensions
 
 public class VivarniCbeOptions
 {
-    public Func<IServiceProvider, ICbeDataStorage>? DataStorageFactory { get; set; }
+    // Data sources (HTTP/FTP + Caching)
     public Func<IServiceProvider, ICbeDataSource>? DataSourceFactory { get; set; }
     public Func<IServiceProvider, ICbeDataSource>? DataSourceCacheFactory { get; set; }
+
+    // Data storage (tables + synchronisation state)
+    public Func<IServiceProvider, ICbeDataStorage>? DataStorageFactory { get; set; }
     public Func<IServiceProvider, ICbeStateRegistry>? SynchronisationStateRegistryFactory { get; set; }
+    public Func<IServiceProvider, IDatabaseObjectNameProvider>? DatabaseObjectNameProviderFactory { get; set; }
 
     public VivarniCbeOptions UseHttpSource(string userName, string password)
     {
@@ -49,6 +57,11 @@ public class VivarniCbeOptions
 
         DataSourceFactory = (s) => cbeDataSource;
         return this;
+    }
+
+    public VivarniCbeOptions UseFTPS(string userName, string password)
+    {
+        throw new NotImplementedException();
     }
 
     public VivarniCbeOptions UseFileSystemCache(string path)

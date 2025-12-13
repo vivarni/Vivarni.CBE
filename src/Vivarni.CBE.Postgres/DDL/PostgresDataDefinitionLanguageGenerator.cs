@@ -8,7 +8,7 @@ using Vivarni.CBE.Postgres.Setup;
 
 namespace Vivarni.CBE.Postgres.DDL;
 
-public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGenerator
+public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGenerator, IDatabaseObjectNameProvider
 {
     private readonly string _schema;
     private readonly string _tablePrefix;
@@ -18,6 +18,9 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
         _schema = PostgresDatabaseObjectNameProvider.GetObjectName(opts.Schema);
         _tablePrefix = opts.TablePrefix;
     }
+
+    public string GetTableName<T>() where T : ICbeEntity
+        => PostgresDatabaseObjectNameProvider.GetObjectName(typeof(T).Name);
 
     public string GenerateDDL()
     {
