@@ -69,7 +69,7 @@ internal class OracleDatabaseObjectNameProvider
     /// - Handles reserved keywords by prefixing
     /// - Ensures valid Oracle identifier rules
     /// </summary>
-    public static string Normalize(string identifier, bool allowReserved = false)
+    private static string Normalize(string identifier, bool allowReserved = false)
     {
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));

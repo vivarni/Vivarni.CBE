@@ -63,7 +63,7 @@ internal class PostgresDatabaseObjectNameProvider
     /// - Starts with letter or underscore
     /// Throws if it cannot produce a safe identifier or if it's a reserved keyword (unless allowReserved).
     /// </summary>
-    public static string Normalize(string identifier, bool allowReserved = false)
+    private static string Normalize(string identifier, bool allowReserved = false)
     {
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));

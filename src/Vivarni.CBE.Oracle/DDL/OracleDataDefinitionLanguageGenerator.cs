@@ -59,6 +59,8 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
             var indexStatements = new List<string>();
             var tableName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(OracleDatabaseObjectNameProvider.GetObjectName)
+                ?? throw new Exception("ICbeEntity has no primary key definition!");
 
             sb.AppendLine($"    ----------------------------------------------------------------------------------");
             sb.AppendLine($"    -- TABLE :: {tableName}");
@@ -84,7 +86,8 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                 }
             }
 
-            sb.AppendLine(string.Join(",\n", columnDefinitions));
+            sb.AppendLine(string.Join(",\n", columnDefinitions) + ',');
+            sb.AppendLine("            PRIMARY KEY (" + string.Join(", ", primaryKeyColumns) + ")");
             sb.AppendLine($"        )';");
             sb.AppendLine($"    END IF;");
             sb.AppendLine();

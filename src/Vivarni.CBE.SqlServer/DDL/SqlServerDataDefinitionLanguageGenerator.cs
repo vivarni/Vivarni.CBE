@@ -39,13 +39,15 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
         {
             var tableName = _tablePrefix + type.Name;
             var properties = type.GetProperties();
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames
+                ?? throw new Exception("ICbeEntity has no primary key definition!");
 
             sb.AppendLine($"IF OBJECT_ID('{_schema}.{tableName}', 'U') IS NULL\nBEGIN");
             sb.AppendLine($"CREATE TABLE [{_schema}].[{tableName}] (");
 
             foreach (var prop in properties)
             {
-                var columnName = _tablePrefix + prop.Name;
+                var columnName = prop.Name;
                 var sqlType = GetSqlType(prop);
                 sb.AppendLine($"    [{columnName}] {sqlType},");
 
@@ -60,6 +62,7 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
             }
 
 
+            sb.AppendLine("    PRIMARY KEY (" + string.Join(',', primaryKeyColumns) + ")");
             sb.AppendLine(")");
             sb.AppendLine("END\n\n");
         }
