@@ -10,14 +10,15 @@ public class CbePrimaryKeyAttribute : Attribute
     /// <summary>
     /// The properties which constitute the primary key, in order.
     /// </summary>
-    public IReadOnlyList<string> PropertyNames { get; }
+    public IReadOnlyList<string> PropertyNames => _propertyNames.AsReadOnly();
+    private readonly List<string> _propertyNames;
 
     public CbePrimaryKeyAttribute(string propertyName, params string[] additionalPropertyNames)
     {
         //Check.NotEmpty(propertyName);
         //Check.HasNoEmptyElements(additionalPropertyNames);
 
-        PropertyNames = [propertyName];
-        ((List<string>)PropertyNames).AddRange(additionalPropertyNames);
+        _propertyNames = [propertyName];
+        _propertyNames.AddRange(additionalPropertyNames);
     }
 }

@@ -17,7 +17,7 @@ public class CbeEstablishment : ICbeEntity
     /// <summary>
     /// Unique identifier for the establishment (business unit) as registered in the KBO.
     /// </summary>
-    [CsvIndex(0), MaxLength(16), CbeIndex]
+    [CsvIndex(0), MaxLength(16)]
     public string EstablishmentNumber { get; set; }
 
     /// <summary>

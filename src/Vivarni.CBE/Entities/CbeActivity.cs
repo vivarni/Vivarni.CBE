@@ -6,13 +6,13 @@ using Vivarni.CBE.DataSources;
 namespace Vivarni.CBE.Entities;
 
 [CsvFileMapping("activity")]
-[CbePrimaryKey(nameof(EntityNumber), nameof(NaceCode), nameof(NaceVersion), nameof(Classification), nameof(ActivityGroup))]
+[CbePrimaryKey(nameof(EntityNumber), nameof(NaceVersion), nameof(NaceCode), nameof(Classification), nameof(ActivityGroup))]
 public class CbeActivity : ICbeEntity
 {
     /// <summary>
     /// The establishment unit or enterprise number.
     /// </summary>
-    [CsvIndex(0), MaxLength(16), CbeIndex]
+    [CsvIndex(0), MaxLength(16)]
     public string EntityNumber { get; set; }
 
     /// <summary>

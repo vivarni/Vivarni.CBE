@@ -17,7 +17,7 @@ public class CbeEnterprise : ICbeEntity
     /// <summary>
     /// Unique identifier for the enterprise (company number) as registered in the KBO.
     /// </summary>
-    [CsvIndex(0), MaxLength(12), CbeIndex]
+    [CsvIndex(0), MaxLength(12)]
     public string EnterpriseNumber { get; set; }
 
     /// <summary>

@@ -12,7 +12,7 @@ public class CbeAddress : ICbeEntity
     /// <summary>
     /// The establishment unit or enterprise number.
     /// </summary>
-    [CsvIndex(0), MaxLength(16), CbeIndex]
+    [CsvIndex(0), MaxLength(16)]
     public string EntityNumber { get; set; }
 
     /// <summary>
