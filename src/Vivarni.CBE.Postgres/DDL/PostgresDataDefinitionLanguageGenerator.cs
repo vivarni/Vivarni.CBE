@@ -38,8 +38,7 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
         {
             var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
-            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(PostgresDatabaseObjectNameProvider.GetObjectName)
-                ?? throw new Exception("ICbeEntity has no primary key definition!");
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(PostgresDatabaseObjectNameProvider.GetObjectName);
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{tableName} (");
 
@@ -59,8 +58,9 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
                 }
             }
 
-            sb.AppendLine(string.Join(",\n", columnDefinitions) + ',');
-            sb.AppendLine("    PRIMARY KEY (" + string.Join(", ", primaryKeyColumns) + ")");
+            sb.AppendLine(string.Join(",\n", columnDefinitions));
+            if (primaryKeyColumns != null)
+                sb.AppendLine("    ,PRIMARY KEY (" + string.Join(", ", primaryKeyColumns) + ")");
             sb.AppendLine(");\n");
         }
 

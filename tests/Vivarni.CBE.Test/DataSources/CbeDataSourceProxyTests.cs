@@ -14,14 +14,14 @@ namespace Vivarni.CBE.Test.DataSources;
 public class CbeDataSourceProxyTests
 {
     private readonly ILogger<CbeDataSourceProxy> _logger;
-    private readonly Mock<ICbeDataSource> _mockSource;
-    private readonly Mock<ICbeDataSourceCache> _mockCache;
+    private readonly Mock<ICbeDataSource> _upstream;
+    private readonly Mock<ICbeDataSourceCache> _cache;
 
     public CbeDataSourceProxyTests()
     {
         _logger = new Mock<ILogger<CbeDataSourceProxy>>().Object;
-        _mockSource = new Mock<ICbeDataSource>();
-        _mockCache = new Mock<ICbeDataSourceCache>();
+        _upstream = new Mock<ICbeDataSource>();
+        _cache = new Mock<ICbeDataSourceCache>();
     }
 
     #region GetOpenDataFilesAsync Tests
@@ -41,12 +41,12 @@ public class CbeDataSourceProxyTests
             new("KboOpenData_0003_2025_01_03_Full.zip")
         };
 
-        _mockSource.Setup(s => s.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
+        _upstream.Setup(s => s.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(sourceFiles);
-        _mockCache.Setup(c => c.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
+        _cache.Setup(c => c.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(cacheFiles);
 
-        var proxy = new CbeDataSourceProxy(_logger, _mockSource.Object, _mockCache.Object);
+        var proxy = new CbeDataSourceProxy(_logger, _upstream.Object, _cache.Object);
 
         // Act
         var result = await proxy.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
@@ -67,10 +67,10 @@ public class CbeDataSourceProxyTests
             new("KboOpenData_0001_2025_01_01_Full.zip")
         };
 
-        _mockSource.Setup(s => s.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
+        _upstream.Setup(s => s.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(sourceFiles);
 
-        var proxy = new CbeDataSourceProxy(_logger, _mockSource.Object, null);
+        var proxy = new CbeDataSourceProxy(_logger, _upstream.Object, null);
 
         // Act
         var result = await proxy.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
@@ -89,10 +89,10 @@ public class CbeDataSourceProxyTests
             new("KboOpenData_0001_2025_01_01_Full.zip")
         };
 
-        _mockCache.Setup(c => c.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
+        _cache.Setup(c => c.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(cacheFiles);
 
-        var proxy = new CbeDataSourceProxy(_logger, null, _mockCache.Object);
+        var proxy = new CbeDataSourceProxy(_logger, null, _cache.Object);
 
         // Act
         var result = await proxy.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
@@ -111,46 +111,49 @@ public class CbeDataSourceProxyTests
     {
         // Arrange
         var file = new CbeOpenDataFile("KboOpenData_0001_2025_01_01_Full.zip");
-        using var cacheStream = new MemoryStream();
-        using var sourceStream = new MemoryStream();
+        var cacheStream = new MemoryStream();
+        var sourceStream = new MemoryStream();
 
-        _mockCache.Setup(c => c.ReadAsync(file, TestContext.Current.CancellationToken))
+        _cache.Setup(c => c.ExistsAsync(file, TestContext.Current.CancellationToken))
+            .ReturnsAsync(true);
+        _cache.Setup(c => c.ReadAsync(file, TestContext.Current.CancellationToken))
             .ReturnsAsync(cacheStream);
-        _mockSource.Setup(s => s.ReadAsync(file, TestContext.Current.CancellationToken))
+        _upstream.Setup(s => s.ReadAsync(file, TestContext.Current.CancellationToken))
             .ReturnsAsync(sourceStream);
 
-        var proxy = new CbeDataSourceProxy(_logger, _mockSource.Object, _mockCache.Object);
+        var proxy = new CbeDataSourceProxy(_logger, _upstream.Object, _cache.Object);
 
         // Act
         var result = await proxy.ReadAsync(file, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Same(cacheStream, result);
-        _mockCache.Verify(c => c.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
-        _mockSource.Verify(s => s.ReadAsync(file, TestContext.Current.CancellationToken), Times.Never);
+        _cache.Verify(c => c.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
+        _upstream.Verify(s => s.ReadAsync(file, TestContext.Current.CancellationToken), Times.Never);
     }
 
     [Fact]
     public async Task ReadAsync_WithCacheFailure_ShouldFallbackToSource()
     {
-        // Arrange
+        // Arrange (cache says it has the file, but fails afterwards)
+        var cacheFiles = new List<string>();
         var file = new CbeOpenDataFile("KboOpenData_0001_2025_01_01_Full.zip");
-        using var sourceStream = new MemoryStream();
+        var sourceStream = new MemoryStream();
 
-        _mockCache.Setup(c => c.ReadAsync(file, TestContext.Current.CancellationToken))
-            .ThrowsAsync(new FileNotFoundException("Cache file not found"));
-        _mockSource.Setup(s => s.ReadAsync(file, TestContext.Current.CancellationToken))
-            .ReturnsAsync(sourceStream);
+        _cache.Setup(c => c.ExistsAsync(file, TestContext.Current.CancellationToken)).ReturnsAsync(true);
+        _cache.Setup(c => c.ReadAsync(file, TestContext.Current.CancellationToken)).ThrowsAsync(new FileNotFoundException("Cache file not found"));
+        _cache.Setup(c => c.WriteAsync(file, It.IsAny<Stream>(), TestContext.Current.CancellationToken)).ThrowsAsync(new InvalidOperationException("Cache write failed"));
+        _upstream.Setup(s => s.ReadAsync(file, TestContext.Current.CancellationToken)).ReturnsAsync(sourceStream);
 
-        var proxy = new CbeDataSourceProxy(_logger, _mockSource.Object, _mockCache.Object);
+        var proxy = new CbeDataSourceProxy(_logger, _upstream.Object, _cache.Object);
 
         // Act
         var result = await proxy.ReadAsync(file, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Same(sourceStream, result);
-        _mockCache.Verify(c => c.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
-        _mockSource.Verify(s => s.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
+        _cache.Verify(c => c.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
+        _upstream.Verify(s => s.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
     }
 
     [Fact]
@@ -158,19 +161,19 @@ public class CbeDataSourceProxyTests
     {
         // Arrange
         var file = new CbeOpenDataFile("KboOpenData_0001_2025_01_01_Full.zip");
-        using var sourceStream = new MemoryStream();
+        var sourceStream = new MemoryStream();
 
-        _mockSource.Setup(s => s.ReadAsync(file, TestContext.Current.CancellationToken))
+        _upstream.Setup(s => s.ReadAsync(file, TestContext.Current.CancellationToken))
             .ReturnsAsync(sourceStream);
 
-        var proxy = new CbeDataSourceProxy(_logger, _mockSource.Object, null);
+        var proxy = new CbeDataSourceProxy(_logger, _upstream.Object, null);
 
         // Act
         var result = await proxy.ReadAsync(file, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Same(sourceStream, result);
-        _mockSource.Verify(s => s.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
+        _upstream.Verify(s => s.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
     }
 
     [Fact]
@@ -178,19 +181,20 @@ public class CbeDataSourceProxyTests
     {
         // Arrange
         var file = new CbeOpenDataFile("KboOpenData_0001_2025_01_01_Full.zip");
-        using var cacheStream = new MemoryStream();
+        var cacheStream = new MemoryStream();
 
-        _mockCache.Setup(c => c.ReadAsync(file, TestContext.Current.CancellationToken))
+        _cache.Setup(c => c.ExistsAsync(file, TestContext.Current.CancellationToken)).ReturnsAsync(true);
+        _cache.Setup(c => c.ReadAsync(file, TestContext.Current.CancellationToken))
             .ReturnsAsync(cacheStream);
 
-        var proxy = new CbeDataSourceProxy(_logger, null, _mockCache.Object);
+        var proxy = new CbeDataSourceProxy(_logger, null, _cache.Object);
 
         // Act
         var result = await proxy.ReadAsync(file, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Same(cacheStream, result);
-        _mockCache.Verify(c => c.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
+        _cache.Verify(c => c.ReadAsync(file, TestContext.Current.CancellationToken), Times.Once);
     }
 
     [Fact]
@@ -201,12 +205,11 @@ public class CbeDataSourceProxyTests
         var cacheException = new FileNotFoundException("Cache file not found");
         var sourceException = new InvalidOperationException("Source unavailable");
 
-        _mockCache.Setup(c => c.ReadAsync(file, TestContext.Current.CancellationToken))
-            .ThrowsAsync(cacheException);
-        _mockSource.Setup(s => s.ReadAsync(file, TestContext.Current.CancellationToken))
-            .ThrowsAsync(sourceException);
+        _cache.Setup(c => c.ExistsAsync(file, TestContext.Current.CancellationToken)).ReturnsAsync(true);
+        _cache.Setup(c => c.ReadAsync(file, TestContext.Current.CancellationToken)).ThrowsAsync(cacheException);
+        _upstream.Setup(s => s.ReadAsync(file, TestContext.Current.CancellationToken)).ThrowsAsync(sourceException);
 
-        var proxy = new CbeDataSourceProxy(_logger, _mockSource.Object, _mockCache.Object);
+        var proxy = new CbeDataSourceProxy(_logger, _upstream.Object, _cache.Object);
 
         // Act & Assert
         var aggregateException = await Assert.ThrowsAsync<AggregateException>(() =>

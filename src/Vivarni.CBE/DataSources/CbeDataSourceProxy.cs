@@ -70,11 +70,26 @@ internal class CbeDataSourceProxy : ICbeDataSource
 
                 if (_cache != null)
                 {
-                    _logger.LogInformation(LOG_PREFIX + "Writing to cache.", file);
-                    await _cache.WriteAsync(file, sourceStream, cancellationToken);
+                    try
+                    {
+                        _logger.LogInformation(LOG_PREFIX + "Writing to cache.", file);
+                        await _cache.WriteAsync(file, sourceStream, cancellationToken);
 
-                    _logger.LogInformation(LOG_PREFIX + "Reading from cache.", file);
-                    return await _cache.ReadAsync(file, cancellationToken);
+                        _logger.LogInformation(LOG_PREFIX + "Reading from cache.", file);
+                        return await _cache.ReadAsync(file, cancellationToken);
+                    }
+                    catch (Exception cacheEx)
+                    {
+                        _logger.LogError(cacheEx, LOG_PREFIX + "Exception while writing/reading cache after getting from source.", file);
+                        exceptions.Add(cacheEx);
+
+                        // Cache operations failed, but we still have the source stream to return
+                        _logger.LogInformation(LOG_PREFIX + "Returning source stream due to cache failure.", file);
+                        if (sourceStream.CanSeek)
+                            sourceStream.Position = 0;
+
+                        return sourceStream;
+                    }
                 }
 
                 _logger.LogInformation(LOG_PREFIX + "Read from upstream source.", file);

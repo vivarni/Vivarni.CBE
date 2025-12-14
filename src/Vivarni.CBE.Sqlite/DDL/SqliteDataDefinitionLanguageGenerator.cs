@@ -23,8 +23,7 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         {
             var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(type.Name);
             var properties = type.GetProperties();
-            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(SqliteDatabaseObjectNameProvider.QuoteIdentifier)
-                ?? throw new Exception("ICbeEntity has no primary key definition!");
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(SqliteDatabaseObjectNameProvider.QuoteIdentifier);
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName} (");
 
@@ -44,8 +43,9 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                 }
             }
 
-            sb.AppendLine(string.Join(",\n", columnDefinitions) + ",");
-            sb.AppendLine("    PRIMARY KEY (" + string.Join(',', primaryKeyColumns) + ")");
+            sb.AppendLine(string.Join(",\n", columnDefinitions));
+            if (primaryKeyColumns != null)
+                sb.AppendLine("    ,PRIMARY KEY (" + string.Join(',', primaryKeyColumns) + ")");
             sb.AppendLine(");");
             sb.AppendLine();
         }

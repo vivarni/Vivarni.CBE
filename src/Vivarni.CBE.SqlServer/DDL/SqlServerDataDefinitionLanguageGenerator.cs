@@ -39,8 +39,7 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
         {
             var tableName = SqlServerDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
-            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames
-                ?? throw new Exception("ICbeEntity has no primary key definition!");
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames;
 
             sb.AppendLine($"IF OBJECT_ID('{_schema}.{tableName}', 'U') IS NULL\nBEGIN");
             sb.AppendLine($"CREATE TABLE [{_schema}].[{tableName}] (");
@@ -61,8 +60,8 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
                 }
             }
 
-
-            sb.AppendLine("    PRIMARY KEY (" + string.Join(',', primaryKeyColumns) + ")");
+            if (primaryKeyColumns != null)
+                sb.AppendLine("    PRIMARY KEY (" + string.Join(',', primaryKeyColumns) + ")");
             sb.AppendLine(")");
             sb.AppendLine("END\n\n");
         }
