@@ -14,29 +14,29 @@ namespace Vivarni.CBE;
 
 public interface ICbeService
 {
-    Task Sync(CancellationToken cancellationToken = default);
+    Task UpdateCbeDataAsync(CancellationToken cancellationToken = default);
 }
 
 internal class CbeService : ICbeService
 {
     private readonly ICbeStateRegistry _applicationStateRepository;
+    private readonly CbeDataSourceProxy _source;
     private readonly ICbeDataStorage _storage;
-    private readonly ICbeDataSource _source;
     private readonly ILogger _logger;
 
     public CbeService(
         ILogger<CbeService> logger,
-        ICbeDataSource openDataProvider,
+        CbeDataSourceProxy source,
         ICbeStateRegistry applicationStateRepository,
         ICbeDataStorage database)
     {
         _logger = logger;
-        _source = openDataProvider;
+        _source = source;
         _applicationStateRepository = applicationStateRepository;
         _storage = database;
     }
 
-    public async Task Sync(CancellationToken cancellationToken = default)
+    public async Task UpdateCbeDataAsync(CancellationToken cancellationToken = default)
     {
         // Make sure the storage is ready to receive data.
         await _storage.InitializeAsync(cancellationToken);
@@ -54,15 +54,15 @@ internal class CbeService : ICbeService
         // Execute a FULL import if we've never done it before
         if (processedFiles.Count == 0 || !processedFiles.Any(s => s.ExtractType == CbeExtractType.Full))
         {
-            _logger.LogInformation("Executing full sync with latest FULL file.");
+            _logger.LogInformation("CBE sync: Detected first run.");
             var full = sortedOnlineFiles
                 .Where(f => f.ExtractType == CbeExtractType.Full)
                 .OrderByDescending(f => f.ExtractNumber)
                 .First();
 
             await ExecuteFullSync(full, cancellationToken);
-            await _applicationStateRepository.UpdateProcessedFileList([full], cancellationToken);
-            await Sync(cancellationToken); // We might need to process additional update files.
+            await SaveNewProcessedFileList([full], cancellationToken);
+            await UpdateCbeDataAsync(cancellationToken); // We might need to process additional update files.
 
             return;
         }
@@ -70,7 +70,7 @@ internal class CbeService : ICbeService
         // Don't continue if we're already up-to-date
         if (highestProcessedNumber >= highestOnlineNumber)
         {
-            _logger.LogInformation("Database is up-to-date. Highest processed: {HighestProcessed}, Highest online: {HighestOnline}", highestProcessedNumber, highestOnlineNumber);
+            _logger.LogInformation("CBE sync: Database up to date with ExtractNumber={ExtractNumber}", highestProcessedNumber);
             return;
         }
 
@@ -78,15 +78,15 @@ internal class CbeService : ICbeService
         var hasInconsistency = DetectProcessedFilesInconsistency(processedFiles);
         if (hasInconsistency)
         {
-            _logger.LogWarning("Inconsistency detected in processed files. Performing FULL sync to ensure data integrity.");
+            _logger.LogWarning("CBE sync: Inconsistency detected in processed files. Performing FULL sync to ensure data integrity.");
             var full = sortedOnlineFiles
                 .Where(f => f.ExtractType == CbeExtractType.Full)
                 .OrderByDescending(f => f.ExtractNumber)
                 .First();
 
             await ExecuteFullSync(full, cancellationToken);
-            await _applicationStateRepository.UpdateProcessedFileList([full], cancellationToken);
-            await Sync(cancellationToken); // We might need to process additional update files.
+            await SaveNewProcessedFileList([full], cancellationToken);
+            await UpdateCbeDataAsync(cancellationToken); // We might need to process additional update files.
 
             return;
         }
@@ -99,15 +99,15 @@ internal class CbeService : ICbeService
         // Scenario 2b: Missing numbers, we need a FULL import
         if (missingNumbers.Count > 0)
         {
-            _logger.LogInformation("Missing UPDATE file numbers detected: {MissingNumbers}. Falling back to FULL sync.", string.Join(", ", missingNumbers));
+            _logger.LogInformation("CBE sync: Missing UPDATE file numbers detected: {MissingNumbers}.", string.Join(", ", missingNumbers));
             var full = sortedOnlineFiles
                 .Where(f => f.ExtractType == CbeExtractType.Full)
                 .OrderByDescending(f => f.ExtractNumber)
                 .First();
 
             await ExecuteFullSync(full, cancellationToken);
-            await _applicationStateRepository.UpdateProcessedFileList([full], cancellationToken);
-            await Sync(cancellationToken); // We might need to process additional update files.
+            await SaveNewProcessedFileList([full], cancellationToken);
+            await UpdateCbeDataAsync(cancellationToken); // We might need to process additional update files.
 
             return;
         }
@@ -115,7 +115,7 @@ internal class CbeService : ICbeService
         // Scenario 2a: No missing numbers, we can update by applying one or more UPDATE files
         else
         {
-            _logger.LogInformation("Performing incremental sync using UPDATE files from {StartNumber} to {EndNumber}",
+            _logger.LogInformation("CBE sync: Updates available {StartNumber}->{EndNumber}",
                 highestProcessedNumber + 1, highestOnlineNumber);
 
             var updateFiles = sortedOnlineFiles
@@ -129,16 +129,17 @@ internal class CbeService : ICbeService
 
                 // Update the registry immediately
                 processedFiles.Add(updateFile);
-                await _applicationStateRepository.UpdateProcessedFileList(processedFiles, cancellationToken);
+                await SaveNewProcessedFileList(processedFiles, cancellationToken);
             }
 
             return;
         }
     }
 
-    private async Task ExecuteUpdateSync(CbeOpenDataFile item, CancellationToken cancellationToken)
+    private async Task ExecuteUpdateSync(CbeOpenDataFile openDataFile, CancellationToken cancellationToken)
     {
-        using var stream = await _source.ReadAsync(item, cancellationToken);
+        _logger.LogInformation("CBE sync: Processing {CbeOpenDataFileName}", openDataFile.Filename);
+        using var stream = await _source.ReadAsync(openDataFile, cancellationToken);
         using var zipArchive = new ZipArchive(stream);
 
         var codeEntry = typeof(CbeCode).GetCustomAttribute<CsvFileMapping>()?.CsvBaseName
@@ -163,14 +164,12 @@ internal class CbeService : ICbeService
             if (insertEntry != null)
                 await InsertCsvRecords(insertEntry, false, type);
         }
-
-        _logger.LogInformation("CBE sync {CbeUpdateSyncFilename} complete.", item);
     }
 
-    private async Task ExecuteFullSync(CbeOpenDataFile full, CancellationToken cancellationToken)
+    private async Task ExecuteFullSync(CbeOpenDataFile openDataFile, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Full ECB sync: Selected {CbeFullSyncFilename} for data refresh", full.Filename);
-        using var stream = await _source.ReadAsync(full, cancellationToken);
+        _logger.LogInformation("CBE sync: Processing {CbeOpenDataFileName}", openDataFile.Filename);
+        using var stream = await _source.ReadAsync(openDataFile, cancellationToken);
         using var zipArchive = new ZipArchive(stream);
 
         var types = typeof(ICbeEntity)
@@ -193,8 +192,7 @@ internal class CbeService : ICbeService
             await InsertCsvRecords(zipEntry, true, type);
         }
 
-        _logger.LogInformation("Full ECB sync complete. Saving application state with {CbeFullSyncFilename}.", full.Filename);
-        await _applicationStateRepository.UpdateProcessedFileList([full], cancellationToken);
+        await SaveNewProcessedFileList([openDataFile], cancellationToken);
     }
 
     private async Task InsertCsvRecords(ZipArchiveEntry zipEntry, bool truncateFirst, Type type)
@@ -214,7 +212,10 @@ internal class CbeService : ICbeService
         var records = csv.GetRecords<T>();
 
         if (truncateFirst)
+        {
             await _storage.ClearAsync<T>();
+            _logger.LogInformation("CBE sync: Cleared {CbeEntity}", typeof(T).Name);
+        }
 
         await _storage.AddRangeAsync(records);
     }
@@ -259,7 +260,7 @@ internal class CbeService : ICbeService
             deleteIdentifierCount, deleteCountActual, zipEntry.FullName);
     }
 
-    private bool DetectProcessedFilesInconsistency(List<CbeOpenDataFile> processedFiles)
+    private static bool DetectProcessedFilesInconsistency(List<CbeOpenDataFile> processedFiles)
     {
         var latestFull = processedFiles.Where(f => f.ExtractType == CbeExtractType.Full).MaxBy(f => f.ExtractNumber);
         if (latestFull == null) return false;
@@ -268,10 +269,7 @@ internal class CbeService : ICbeService
         foreach (var update in processedFiles.Where(f => f.ExtractType == CbeExtractType.Update && f.ExtractNumber > latestFull.ExtractNumber).OrderBy(f => f.ExtractNumber))
         {
             if (update.ExtractNumber != expected++)
-            {
-                _logger.LogWarning("Gap detected: missing files {Start}-{End}", expected - 1, update.ExtractNumber - 1);
                 return true;
-            }
         }
         return false;
     }
@@ -283,5 +281,11 @@ internal class CbeService : ICbeService
         csvReader.Context.TypeConverterCache.AddConverter<DateOnly?>(new DateOnlyConverter());
 
         return csvReader;
+    }
+
+    private async Task SaveNewProcessedFileList(List<CbeOpenDataFile> files, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("CBE sync: Successfully processed {CbeOpenDataFileName}", files.OrderByDescending(s => s.ExtractNumber).First().Filename);
+        await _applicationStateRepository.UpdateProcessedFileList(files, cancellationToken);
     }
 }

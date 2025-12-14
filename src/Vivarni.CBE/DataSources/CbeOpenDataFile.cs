@@ -3,16 +3,17 @@
 public class CbeOpenDataFile : IEquatable<CbeOpenDataFile>
 {
     public string Filename { get; }
-    public string Source { get; private set; }
 
     public DateOnly SnapshotDate { get; private set; }
     public int ExtractNumber { get; private set; }
     public CbeExtractType ExtractType { get; private set; }
 
+    /// <summary>
+    /// Creates a new instance of this class.
+    /// </summary>
     public CbeOpenDataFile(string source)
     {
-        Source = source;
-        Filename = Path.GetFileName(Source);
+        Filename = Path.GetFileName(source);
 
         // Expected pattern: KboOpenData_[number]_[year]_[month]_[day]_[type].zip
         // Example: KboOpenData_0172_2025_11_05_Full.zip
@@ -55,9 +56,11 @@ public class CbeOpenDataFile : IEquatable<CbeOpenDataFile>
         ExtractType = type;
     }
 
+    /// <inheritdoc/>
     public override string ToString()
         => Filename;
 
+    /// <inheritdoc/>
     public bool Equals(CbeOpenDataFile? other)
     {
         if (ReferenceEquals(this, other))
@@ -69,11 +72,13 @@ public class CbeOpenDataFile : IEquatable<CbeOpenDataFile>
         return string.Equals(Filename, other.Filename, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
         return Equals(obj as CbeOpenDataFile);
     }
 
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         return StringComparer.OrdinalIgnoreCase.GetHashCode(Filename);

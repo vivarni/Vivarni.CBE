@@ -2,6 +2,6 @@
 
 public interface ICbeDataSource
 {
-    Task<IReadOnlyList<CbeOpenDataFile>> GetOpenDataFilesAsync(CancellationToken cancellationToken);
-    Task<Stream> ReadAsync(CbeOpenDataFile file, CancellationToken cancellationToken);
+    Task<IReadOnlyList<CbeOpenDataFile>> GetOpenDataFilesAsync(CancellationToken cancellationToken = default);
+    Task<Stream> ReadAsync(CbeOpenDataFile file, CancellationToken cancellationToken = default);
 }

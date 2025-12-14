@@ -31,13 +31,14 @@ internal class Program
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
                     .UseSqlite("Data Source=kbo.db")
-                    .UseFileSystemCache("c:/temp/kbo-light"))
+                    .UseHttpSource(cbeUser, cbePassword)
+                    .UseFileSystemCache("c:/temp/kbo-cache"))
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
             var demo = serviceProvider.GetRequiredService<SearchDemo>();
 
-            await cbe.Sync();
+            await cbe.UpdateCbeDataAsync();
             await demo.Run();
         }
         catch (Exception ex)

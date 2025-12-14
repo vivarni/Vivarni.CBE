@@ -23,17 +23,16 @@ public static class ServiceCollectionExtensions
 
         if (options.DatabaseObjectNameProviderFactory != null)
             services.AddScoped(options.DatabaseObjectNameProviderFactory);
+        if (options.DataSourceFactory != null)
+            services.AddScoped(options.DataSourceFactory);
+        if (options.DataSourceCacheFactory != null)
+            services.AddScoped(options.DataSourceCacheFactory);
 
         services.AddScoped(options.SynchronisationStateRegistryFactory);
         services.AddScoped(options.DataStorageFactory);
 
         services.AddScoped<ICbeService, CbeService>();
-        services.AddScoped<ICbeDataSource>(s =>
-        {
-            var source = options.DataSourceFactory == null ? null : options.DataSourceFactory(s);
-            var cache = options.DataSourceCacheFactory == null ? null : options.DataSourceCacheFactory(s);
-            return new CbeDataSourceProxy(source, cache);
-        });
+        services.AddScoped<CbeDataSourceProxy>();
 
         return services;
     }
@@ -43,13 +42,21 @@ public class CbeIntegrationOptions
 {
     // Data sources (HTTP/FTP + Caching)
     public Func<IServiceProvider, ICbeDataSource>? DataSourceFactory { get; set; }
-    public Func<IServiceProvider, ICbeDataSource>? DataSourceCacheFactory { get; set; }
+    public Func<IServiceProvider, ICbeDataSourceCache>? DataSourceCacheFactory { get; set; }
 
     // Data storage (tables + synchronisation state)
     public Func<IServiceProvider, ICbeDataStorage>? DataStorageFactory { get; set; }
     public Func<IServiceProvider, ICbeStateRegistry>? SynchronisationStateRegistryFactory { get; set; }
     public Func<IServiceProvider, IDatabaseObjectNameProvider>? DatabaseObjectNameProviderFactory { get; set; }
 
+    /// <summary>
+    /// Configures the CBE integration to use the web interface from the Belgian Federal Government to
+    /// download the CBE ZIP files (both FULL and UPDATE files).
+    /// https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data
+    /// </summary>
+    /// <param name="userName">Username for access to the CBE Open Data.</param>
+    /// <param name="password">Password for access to the CBE Open Data.</param>
+    /// <returns>The same <see cref="CbeIntegrationOptions"/> instance, so that configuration can be chained.</returns>
     public CbeIntegrationOptions UseHttpSource(string userName, string password)
     {
         var credentialProvider = new SimpleCredentialProvider(userName, System.Text.Encoding.UTF8.GetBytes(password));
@@ -59,6 +66,14 @@ public class CbeIntegrationOptions
         return this;
     }
 
+    /// <summary>
+    /// Configures the CBE integration to use the FTPS server from the Belgian Federal Government to
+    /// download the CBE ZIP files (both FULL and UPDATE files).
+    /// https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data
+    /// </summary>
+    /// <param name="userName">Username for access to the CBE Open Data.</param>
+    /// <param name="password">Password for access to the CBE Open Data.</param>
+    /// <returns>The same <see cref="CbeIntegrationOptions"/> instance, so that configuration can be chained.</returns>
     public CbeIntegrationOptions UseFTPS(string userName, string password)
     {
         throw new NotImplementedException();

@@ -47,7 +47,6 @@ internal class PostgresCbeDataStorage
 
         await conn.OpenAsync(cancellationToken);
         await command.ExecuteNonQueryAsync(cancellationToken);
-        _logger.LogDebug("Executed initialisation SQL script");
     }
 
     public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)

@@ -99,8 +99,6 @@ internal class SqliteCbeDataStorage
         command.CommandText = $"DELETE FROM {tableName}";
         command.CommandType = CommandType.Text;
         await command.ExecuteNonQueryAsync(cancellationToken);
-
-        _logger.LogDebug("Cleared {TableName}", tableName);
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -113,7 +111,6 @@ internal class SqliteCbeDataStorage
 
         await conn.OpenAsync(cancellationToken);
         await command.ExecuteNonQueryAsync(cancellationToken);
-        _logger.LogDebug("Executed initialisation SQL script");
     }
 
     public async Task<int> RemoveAsync<T>(IEnumerable<object> entityIds, PropertyInfo deleteOnProperty, CancellationToken cancellationToken = default)
