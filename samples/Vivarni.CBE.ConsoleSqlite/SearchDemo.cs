@@ -1,16 +1,16 @@
-﻿using Dapper;
-using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Vivarni.CBE.Entities;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Vivarni.CBE.ConsoleSqlite;
 
 internal class SearchDemo
 {
-    private readonly string _connectionString;
+    private readonly SearchDbContext _ctx;
 
-    public SearchDemo(IConfiguration configuration)
+    public SearchDemo(SearchDbContext ctx)
     {
-        _connectionString = configuration.GetConnectionString("sqlite")!;
+        _ctx = ctx;
     }
 
     public async Task Run()
@@ -31,7 +31,7 @@ internal class SearchDemo
                 return;
 
             Console.WriteLine();
-            var results = SearchCompanies(_connectionString, input);
+            var results = SearchCompanies(input);
             foreach (var item in results)
                 DisplayCompany(item);
 
@@ -40,75 +40,49 @@ internal class SearchDemo
         }
     }
 
-    private static List<CompanyResult> SearchCompanies(string connectionString, string searchTerm)
+    private List<CbeEnterprise> SearchCompanies(string searchTerm)
     {
-        var query = @"
-                SELECT e.EnterpriseNumber, 
-                       cc.Description as LegalForm, 
-                       cd.Denomination as CompanyName,
-                       ca.StreetNL as Street,
-                       ca.HouseNumber,
-                       ca.Zipcode,
-                       ca.MunicipalityNL as City
-                FROM CbeEnterprise e
-                INNER JOIN CbeCode cc ON cc.Code = e.JuridicalForm 
-                    AND cc.Category = 'JuridicalForm' 
-                    AND cc.""Language"" = 'NL'
-                INNER JOIN CbeDenomination cd ON cd.EntityNumber = e.EnterpriseNumber 
-                INNER JOIN CbeAddress ca ON ca.EntityNumber = e.EnterpriseNumber 
-                WHERE cd.Denomination LIKE @searchTerm
-                LIMIT 10";
-
-        using var conn = new SqliteConnection(connectionString);
-        return [.. conn.Query<CompanyResult>(query, new { searchTerm = $"%{searchTerm}%" })];
+        return _ctx
+            .Set<CbeEnterprise>()
+            .Include(s => s.Denominations)
+            .Where(s => s.EnterpriseNumber == "0200.068.636")
+            .ToList();
     }
 
-    private static void DisplayCompany(CompanyResult company)
+    private static void DisplayCompany(CbeEnterprise enterprise)
     {
-        Console.WriteLine($"# {company.CompanyName}");
-        Console.WriteLine($"  Enterprise #: {company.EnterpriseNumber}");
-        Console.WriteLine($"  Legal Form:   {company.LegalForm}");
+        Console.WriteLine($"# {enterprise.Denominations.FirstOrDefault()?.Denomination}");
+        Console.WriteLine($"  Enterprise #: {enterprise.EnterpriseNumber}");
+        Console.WriteLine($"  Legal Form:   {enterprise.JuridicalSituation}");
 
-        var address = BuildAddress(company);
-        if (!string.IsNullOrEmpty(address))
-            Console.WriteLine($"   Address:      {address}");
+        //if (!string.IsNullOrEmpty(address))
+        //    Console.WriteLine($"   Address:      {address}");
     }
 
-    private static string BuildAddress(CompanyResult company)
-    {
-        var parts = new List<string>();
-
-        if (!string.IsNullOrEmpty(company.Street))
-        {
-            var streetPart = company.Street;
-            if (!string.IsNullOrEmpty(company.HouseNumber))
-                streetPart += $" {company.HouseNumber}";
-            parts.Add(streetPart);
-        }
-
-        if (!string.IsNullOrEmpty(company.Zipcode) || !string.IsNullOrEmpty(company.City))
-        {
-            var cityPart = "";
-            if (!string.IsNullOrEmpty(company.Zipcode))
-                cityPart = company.Zipcode;
-            if (!string.IsNullOrEmpty(company.City))
-                cityPart += string.IsNullOrEmpty(cityPart) ? company.City : $" {company.City}";
-
-            if (!string.IsNullOrEmpty(cityPart))
-                parts.Add(cityPart);
-        }
-
-        return string.Join(", ", parts);
-    }
-
-    private class CompanyResult
-    {
-        public string EnterpriseNumber { get; set; } = "";
-        public string LegalForm { get; set; } = "";
-        public string CompanyName { get; set; } = "";
-        public string Street { get; set; } = "";
-        public string HouseNumber { get; set; } = "";
-        public string Zipcode { get; set; } = "";
-        public string City { get; set; } = "";
-    }
+    //private static string BuildAddress(CompanyResult company)
+    //{
+    //    var parts = new List<string>();
+    //
+    //    if (!string.IsNullOrEmpty(company.Street))
+    //    {
+    //        var streetPart = company.Street;
+    //        if (!string.IsNullOrEmpty(company.HouseNumber))
+    //            streetPart += $" {company.HouseNumber}";
+    //        parts.Add(streetPart);
+    //    }
+    //
+    //    if (!string.IsNullOrEmpty(company.Zipcode) || !string.IsNullOrEmpty(company.City))
+    //    {
+    //        var cityPart = "";
+    //        if (!string.IsNullOrEmpty(company.Zipcode))
+    //            cityPart = company.Zipcode;
+    //        if (!string.IsNullOrEmpty(company.City))
+    //            cityPart += string.IsNullOrEmpty(cityPart) ? company.City : $" {company.City}";
+    //
+    //        if (!string.IsNullOrEmpty(cityPart))
+    //            parts.Add(cityPart);
+    //    }
+    //
+    //    return string.Join(", ", parts);
+    //}
 }

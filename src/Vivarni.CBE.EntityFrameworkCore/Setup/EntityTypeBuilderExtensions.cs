@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Vivarni.CBE.DataSources;
-using Vivarni.CBE.DataSources.Entities;
+using Vivarni.CBE.Entities;
 
 namespace Vivarni.CBE.EntityFrameworkCore.Setup;
 

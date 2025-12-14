@@ -30,16 +30,31 @@ internal class Program
             var ftpPassword = configuration["cbe:ftp-password"] ?? string.Empty;
 
             var connectionString = GetConnectionString();
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog());
+
             var serviceProvider = new ServiceCollection()
-                .AddLogging(builder => builder.AddSerilog())
+                // ------------------------------------------------------------------
+                // Boilerplate setup for an application using EF Core
+                //
+                .AddLogging(builder => builder.AddSerilog()) // This line remains unchanged
                 .AddSingleton<IConfiguration>(configuration)
-                .AddDbContext<SearchDbContext>()
+                .AddSingleton(loggerFactory)
+                .AddDbContext<SearchDbContext>(o => o
+                    .UseSqlite(connectionString)
+                    .UseLoggerFactory(loggerFactory)
+                    .EnableSensitiveDataLogging())
                 .AddSingleton<SearchDemo>()
+
+                // ------------------------------------------------------------------
+                // The section configures Vivarni.CBE with the following:
+                // 
                 .AddVivarniCBE(s => s
                     .UseSqlite(connectionString)
                     //.UseHttpSource(httpUser, httpPassword)
                     .UseFtpsSource(ftpUser, ftpPassword)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
+
+                // ------------------------------------------------------------------
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();

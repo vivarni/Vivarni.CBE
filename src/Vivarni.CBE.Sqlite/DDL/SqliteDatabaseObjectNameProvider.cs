@@ -13,7 +13,7 @@ public class SqliteDatabaseObjectNameProvider : IDatabaseObjectNameProvider
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));
 
-        var safe = identifier.Replace("\"", "\"\"");
-        return $"\"{safe}\"";
+        var safe = identifier.Replace("\"", "");
+        return safe;
     }
 }

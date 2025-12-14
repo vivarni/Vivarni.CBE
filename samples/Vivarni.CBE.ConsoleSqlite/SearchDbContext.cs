@@ -4,21 +4,14 @@ using Vivarni.CBE.EntityFrameworkCore.Setup;
 
 namespace Vivarni.CBE.ConsoleSqlite;
 
+
 internal class SearchDbContext : DbContext
 {
     private readonly IDatabaseObjectNameProvider _objectNameProvider;
 
-    public SearchDbContext(IDatabaseObjectNameProvider objectNameProvider)
+    public SearchDbContext(DbContextOptions<SearchDbContext> opts, IDatabaseObjectNameProvider objectNameProvider) : base(opts)
     {
         _objectNameProvider = objectNameProvider;
-    }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlite("Data Source=cbe_demo.db");
-        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

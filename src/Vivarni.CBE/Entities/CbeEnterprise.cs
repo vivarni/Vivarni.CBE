@@ -58,6 +58,8 @@ public class CbeEnterprise : ICbeEntity
     /// </summary>
     [CsvIndex(6)]
     public DateOnly StartDate { get; set; }
+
+    public ICollection<CbeDenomination> Denominations { get; set; }
 }
 
 #pragma warning restore CS8618
