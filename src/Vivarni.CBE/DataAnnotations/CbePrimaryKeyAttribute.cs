@@ -2,7 +2,7 @@
 
 /// <summary>
 /// Indicates that this column should be used as primary key.
-/// The <see cref="ICbeDataStorage"/> is free to ignore this attributnameof(
+/// The <see cref="ICbeDataStorage"/> is free to ignore this attribute.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class CbePrimaryKeyAttribute : Attribute
@@ -15,9 +15,6 @@ public class CbePrimaryKeyAttribute : Attribute
 
     public CbePrimaryKeyAttribute(string propertyName, params string[] additionalPropertyNames)
     {
-        //Check.NotEmpty(propertyName);
-        //Check.HasNoEmptyElements(additionalPropertyNames);
-
         _propertyNames = [propertyName];
         _propertyNames.AddRange(additionalPropertyNames);
     }
