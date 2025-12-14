@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.SqlServer.DDL;
+using Vivarni.CBE.SqlServer.Util;
 using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.SqlServer;

@@ -5,6 +5,9 @@ using Vivarni.CBE.DataSources;
 
 namespace Vivarni.CBE.Entities;
 
+/// <summary>
+/// Description of codes that are used in other CBE entities.
+/// </summary>
 [CsvFileMapping("code")]
 [CbePrimaryKey(nameof(Code), nameof(Language), nameof(Category))]
 public class CbeCode : ICbeEntity

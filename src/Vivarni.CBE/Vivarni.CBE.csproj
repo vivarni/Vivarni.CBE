@@ -1,9 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <Version>0.0.1</Version>
+    <Authors>Michaël Vittorelli</Authors>
+    <RepositoryUrl>https://github.com/vivarni/vivarni.CBE</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/vivarni/vivarni.CBE</PackageProjectUrl>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Description>
+      Simple solution for importing and synchronizing CBE data into Oracle, Postgres, SQL Server, or any other database.
+      CBE is the English acronym for Kruispuntbank van Ondernemingen (KBO) or Banque-Carrefour des Entreprises (BCE).
+      This package provides core features for data modelling, synchronisation processes and connection to the files published by the CBE.
+    </Description>
+    <PackageTags>bce;kbo;kruispuntbank van ondernemingen;banque carrefour des entreprises</PackageTags>
+    <LangVersion>latest</LangVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>true</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +34,10 @@
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../doc/icon.png" Pack="true" Visible="false" PackagePath="\" />
   </ItemGroup>
 
 </Project>
