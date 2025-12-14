@@ -1,15 +1,18 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Vivarni.CBE.DataSources;
+
 #pragma warning disable CS8618
 
-namespace Vivarni.CBE.DataSources.Entities;
+namespace Vivarni.CBE.Entities;
 
 [CsvFileMapping("contact")]
+[CbePrimaryKey(nameof(EntityNumber), nameof(EntityContact), nameof(ContactType), nameof(Value))]
 public class CbeContact : ICbeEntity
 {
     /// <summary>
     /// The establishment unit or enterprise number.
     /// </summary>
-    [CsvIndex(0), MaxLength(16), IndexColumn] public string EntityNumber { get; set; }
+    [CsvIndex(0), MaxLength(16)] public string EntityNumber { get; set; }
 
     /// <summary>
     /// Indicates for which type of entity this is a contact detail: enterprise, branch, or establishment

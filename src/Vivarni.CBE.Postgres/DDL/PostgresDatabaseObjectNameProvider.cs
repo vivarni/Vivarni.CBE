@@ -1,8 +1,10 @@
 ﻿using System.Text;
+using Vivarni.CBE.DataSources;
+using Vivarni.CBE.DataStorage;
 
 namespace Vivarni.CBE.Postgres.DDL;
 
-internal class PostgresDatabaseObjectNameProvider
+internal class PostgresDatabaseObjectNameProvider : IDatabaseObjectNameProvider
 {
     // Minimal reserved keywords set—expand for your domain, or leave empty and enforce naming rules upstream.
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
@@ -11,7 +13,10 @@ internal class PostgresDatabaseObjectNameProvider
         "primary", "foreign", "references", "where", "join", "index"
     };
 
-    public static string GetObjectName(string input)
+    public string GetTableName<T>() where T : ICbeEntity
+        => GetObjectName(typeof(T).Name);
+
+    internal static string GetObjectName(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
             throw new ArgumentException("Input cannot be null or empty.", nameof(input));
@@ -29,16 +34,16 @@ internal class PostgresDatabaseObjectNameProvider
 
         var sb = new StringBuilder();
 
-        for (int i = 0; i < input.Length; i++)
+        for (var i = 0; i < input.Length; i++)
         {
-            char c = input[i];
+            var c = input[i];
 
             // If current character is uppercase and not the first character
             if (char.IsUpper(c) && i > 0)
             {
                 // Add underscore before uppercase letter, but only if the previous character
                 // is not already an underscore or uppercase
-                char prevChar = input[i - 1];
+                var prevChar = input[i - 1];
                 if (prevChar != '_' && !char.IsUpper(prevChar))
                 {
                     sb.Append('_');
@@ -63,7 +68,7 @@ internal class PostgresDatabaseObjectNameProvider
     /// - Starts with letter or underscore
     /// Throws if it cannot produce a safe identifier or if it's a reserved keyword (unless allowReserved).
     /// </summary>
-    public static string Normalize(string identifier, bool allowReserved = false)
+    private static string Normalize(string identifier, bool allowReserved = false)
     {
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));
@@ -73,9 +78,9 @@ internal class PostgresDatabaseObjectNameProvider
 
         // Replace invalid characters with underscore
         var chars = s.ToCharArray();
-        for (int i = 0; i < chars.Length; i++)
+        for (var i = 0; i < chars.Length; i++)
         {
-            char ch = chars[i];
+            var ch = chars[i];
             if (!(ch >= 'a' && ch <= 'z') &&
                 !(ch >= '0' && ch <= '9') &&
                 ch != '_')

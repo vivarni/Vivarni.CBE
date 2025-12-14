@@ -1,8 +1,10 @@
 ﻿using System.Text;
+using Vivarni.CBE.DataSources;
+using Vivarni.CBE.DataStorage;
 
 namespace Vivarni.CBE.Oracle.DDL;
 
-internal class OracleDatabaseObjectNameProvider
+internal class OracleDatabaseObjectNameProvider : IDatabaseObjectNameProvider
 {
     private static readonly HashSet<string> s_reserved = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -19,7 +21,10 @@ internal class OracleDatabaseObjectNameProvider
         "VIEW", "WHENEVER", "WHERE", "WITH"
     };
 
-    public static string GetObjectName(string input)
+    public string GetTableName<T>() where T : ICbeEntity
+        => GetObjectName(typeof(T).Name);
+
+    internal static string GetObjectName(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
             throw new ArgumentException("Input cannot be null or empty.", nameof(input));
@@ -69,7 +74,7 @@ internal class OracleDatabaseObjectNameProvider
     /// - Handles reserved keywords by prefixing
     /// - Ensures valid Oracle identifier rules
     /// </summary>
-    public static string Normalize(string identifier, bool allowReserved = false)
+    private static string Normalize(string identifier, bool allowReserved = false)
     {
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));

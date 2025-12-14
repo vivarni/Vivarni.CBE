@@ -5,7 +5,7 @@ namespace Vivarni.CBE.Postgres.Setup;
 
 public static class ConfigurationBuilderExtensions
 {
-    public static VivarniCbeOptions WithPostgres(this VivarniCbeOptions builder, string connectionString, PostgresCbeOptions? opts = null)
+    public static VivarniCbeOptions UsePostgres(this VivarniCbeOptions builder, string connectionString, PostgresCbeOptions? opts = null)
     {
         builder.DataStorageFactory = (s) =>
         {

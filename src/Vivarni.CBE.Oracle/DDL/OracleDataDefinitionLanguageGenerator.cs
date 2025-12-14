@@ -59,6 +59,8 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
             var indexStatements = new List<string>();
             var tableName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(OracleDatabaseObjectNameProvider.GetObjectName)
+                ?? throw new Exception("ICbeEntity has no primary key definition!");
 
             sb.AppendLine($"    ----------------------------------------------------------------------------------");
             sb.AppendLine($"    -- TABLE :: {tableName}");
@@ -76,7 +78,7 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                 columnDefinitions.Add($"            {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                if (prop.GetCustomAttribute<CbeIndexAttribute>() != null)
                 {
                     var indexName = OracleDatabaseObjectNameProvider.GetObjectName($"IX_{type.Name}_{prop.Name}");
                     var indexStatement = GenerateIndexStatement(indexName, tableName, columnName);
@@ -84,7 +86,8 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                 }
             }
 
-            sb.AppendLine(string.Join(",\n", columnDefinitions));
+            sb.AppendLine(string.Join(",\n", columnDefinitions) + ',');
+            sb.AppendLine("            PRIMARY KEY (" + string.Join(", ", primaryKeyColumns) + ")");
             sb.AppendLine($"        )';");
             sb.AppendLine($"    END IF;");
             sb.AppendLine();
@@ -141,8 +144,6 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         };
 
         var constraints = new List<string>();
-        if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
-            constraints.Add("PRIMARY KEY");
 
         if (!isNullable)
             constraints.Add("NOT NULL");

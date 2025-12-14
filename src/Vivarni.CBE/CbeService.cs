@@ -6,8 +6,8 @@ using System.Text;
 using CsvHelper;
 using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataSources;
-using Vivarni.CBE.DataSources.Entities;
 using Vivarni.CBE.DataStorage;
+using Vivarni.CBE.Entities;
 using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE;
@@ -207,7 +207,7 @@ internal class CbeService : ICbeService
     }
 
     private async Task InsertCsvRecordsGeneric<T>(ZipArchiveEntry zipEntry, bool truncateFirst)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         using var sr = new StreamReader(zipEntry.Open(), Encoding.UTF8, true);
         using var csv = CreateCsvReader(sr);

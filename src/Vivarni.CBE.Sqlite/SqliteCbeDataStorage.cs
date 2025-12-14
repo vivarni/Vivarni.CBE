@@ -28,7 +28,7 @@ internal class SqliteCbeDataStorage
     }
 
     public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var totalImportCount = 0;
         var entityType = typeof(T);
@@ -54,7 +54,7 @@ internal class SqliteCbeDataStorage
             {
                 // Create parameters for all properties
                 var parameters = new SqliteParameter[properties.Length];
-                for (int i = 0; i < properties.Length; i++)
+                for (var i = 0; i < properties.Length; i++)
                 {
                     var prop = properties[i];
                     var parameter = command.CreateParameter();
@@ -66,7 +66,7 @@ internal class SqliteCbeDataStorage
                 // Insert each entity in the batch
                 foreach (var entity in batch)
                 {
-                    for (int i = 0; i < properties.Length; i++)
+                    for (var i = 0; i < properties.Length; i++)
                     {
                         var value = properties[i].GetValue(entity);
                         parameters[i].Value = value ?? DBNull.Value;
@@ -89,7 +89,7 @@ internal class SqliteCbeDataStorage
     }
 
     public async Task ClearAsync<T>(CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(typeof(T).Name);
         using var conn = new SqliteConnection(_connectionString);
@@ -117,7 +117,7 @@ internal class SqliteCbeDataStorage
     }
 
     public async Task<int> RemoveAsync<T>(IEnumerable<object> entityIds, PropertyInfo deleteOnProperty, CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         using var conn = new SqliteConnection(_connectionString);
         using var command = conn.CreateCommand();

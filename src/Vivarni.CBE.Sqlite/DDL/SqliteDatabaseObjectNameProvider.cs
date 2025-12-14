@@ -1,8 +1,14 @@
-﻿namespace Vivarni.CBE.Sqlite.DDL;
+﻿using Vivarni.CBE.DataSources;
+using Vivarni.CBE.DataStorage;
 
-internal class SqliteDatabaseObjectNameProvider
+namespace Vivarni.CBE.Sqlite.DDL;
+
+public class SqliteDatabaseObjectNameProvider : IDatabaseObjectNameProvider
 {
-    public static string QuoteIdentifier(string identifier)
+    public string GetTableName<T>() where T : ICbeEntity
+        => QuoteIdentifier(typeof(T).Name);
+
+    internal static string QuoteIdentifier(string identifier)
     {
         if (string.IsNullOrWhiteSpace(identifier))
             throw new ArgumentException("Identifier cannot be null/empty.", nameof(identifier));

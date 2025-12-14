@@ -23,6 +23,8 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         {
             var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(type.Name);
             var properties = type.GetProperties();
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(SqliteDatabaseObjectNameProvider.QuoteIdentifier)
+                ?? throw new Exception("ICbeEntity has no primary key definition!");
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName} (");
 
@@ -34,7 +36,7 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                 columnDefinitions.Add($"    {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                if (prop.GetCustomAttribute<CbeIndexAttribute>() != null)
                 {
                     var indexName = SqliteDatabaseObjectNameProvider.QuoteIdentifier($"IX_{type.Name}_{prop.Name}");
                     var indexStatement = $"CREATE INDEX IF NOT EXISTS {indexName} ON {tableName} ({columnName});";
@@ -42,7 +44,8 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                 }
             }
 
-            sb.AppendLine(string.Join(",\n", columnDefinitions));
+            sb.AppendLine(string.Join(",\n", columnDefinitions) + ",");
+            sb.AppendLine("    PRIMARY KEY (" + string.Join(',', primaryKeyColumns) + ")");
             sb.AppendLine(");");
             sb.AppendLine();
         }
@@ -69,7 +72,6 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
     {
         var maxLength = prop.GetCustomAttribute<MaxLengthAttribute>()?.Length;
         var propertyType = prop.PropertyType;
-        var isPrimaryKey = prop.GetCustomAttribute<PrimaryKeyColumn>() != null;
 
         var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
         var isNullable = new NullabilityInfoContext().Create(prop).WriteState == NullabilityState.Nullable;
@@ -89,8 +91,6 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         };
 
         var constraints = new List<string>();
-        if (isPrimaryKey)
-            constraints.Add("PRIMARY KEY");
 
         if (!isNullable)
             constraints.Add("NOT NULL");

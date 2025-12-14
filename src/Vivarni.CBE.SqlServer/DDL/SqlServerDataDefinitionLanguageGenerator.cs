@@ -14,7 +14,7 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
 
     public SqlServerDataDefinitionLanguageGenerator(string schema, string tablePrefix)
     {
-        _schema = schema;
+        _schema = SqlServerDatabaseObjectNameProvider.GetObjectName(schema);
         _tablePrefix = tablePrefix;
     }
 
@@ -37,20 +37,22 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
 
         foreach (var type in types)
         {
-            var tableName = _tablePrefix + type.Name;
+            var tableName = SqlServerDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames
+                ?? throw new Exception("ICbeEntity has no primary key definition!");
 
             sb.AppendLine($"IF OBJECT_ID('{_schema}.{tableName}', 'U') IS NULL\nBEGIN");
             sb.AppendLine($"CREATE TABLE [{_schema}].[{tableName}] (");
 
             foreach (var prop in properties)
             {
-                var columnName = _tablePrefix + prop.Name;
+                var columnName = prop.Name;
                 var sqlType = GetSqlType(prop);
                 sb.AppendLine($"    [{columnName}] {sqlType},");
 
                 // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                if (prop.GetCustomAttribute<CbeIndexAttribute>() != null)
                 {
                     var indexName = $"IX_{type.Name}_{prop.Name}";
                     var indexStatement = $"IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = '{indexName}' AND object_id = OBJECT_ID('[{_schema}].[{tableName}]'))\n" +
@@ -60,6 +62,7 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
             }
 
 
+            sb.AppendLine("    PRIMARY KEY (" + string.Join(',', primaryKeyColumns) + ")");
             sb.AppendLine(")");
             sb.AppendLine("END\n\n");
         }
@@ -108,9 +111,6 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
         };
 
         var constraints = new List<string>();
-
-        if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
-            constraints.Add("primary key");
 
         if (!isNullable)
             constraints.Add("not null");

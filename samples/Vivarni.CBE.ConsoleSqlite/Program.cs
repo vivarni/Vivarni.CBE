@@ -12,7 +12,7 @@ internal class Program
         // Configure Serilog for minimal output
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
-            .MinimumLevel.Information()
+            .MinimumLevel.Debug()
             .CreateLogger();
 
         try
@@ -24,15 +24,14 @@ internal class Program
 
             var cbeUser = configuration["cbe:login"] ?? string.Empty;
             var cbePassword = configuration["cbe:password"] ?? string.Empty;
-            var connectionString = configuration.GetConnectionString("sqlite") ?? string.Empty;
 
             var serviceProvider = new ServiceCollection()
                 .AddLogging(builder => builder.AddSerilog())
                 .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
-                    .WithSqliteDatabase(connectionString)
-                    .WithFileSystemCache("c:/temp/kbo-files"))
+                    .UseSqlite("Data Source=kbo.db")
+                    .UseFileSystemCache("c:/temp/kbo-light"))
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();

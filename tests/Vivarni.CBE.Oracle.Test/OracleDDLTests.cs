@@ -14,8 +14,8 @@ public class OracleDDLTests
         var generator = new OracleDataDefinitionLanguageGenerator(opts);
         var sampleIndices = new[]
         {
-            "CREATE INDEX IX_CBE_CONTACT_ENTITY_NUMBER ON CBE_CONTACT (ENTITY_NUMBER)",
-            "CREATE INDEX IX_CBE_ACTIVITY_ENTITY_NUMBER ON CBE_ACTIVITY (ENTITY_NUMBER)",
+            "CREATE INDEX IX_CBE_BRANCH_ENTERPRISE_NUMBER ON CBE_BRANCH (ENTERPRISE_NUMBER)",
+            "CREATE INDEX IX_CBE_ESTABLISHMENT_ENTERPRISE_NUMBER ON CBE_ESTABLISHMENT (ENTERPRISE_NUMBER)",
         };
 
         // Act

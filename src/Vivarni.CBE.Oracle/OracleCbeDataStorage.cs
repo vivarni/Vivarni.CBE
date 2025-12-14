@@ -49,7 +49,7 @@ internal class OracleCbeDataStorage
     }
 
     public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var totalImportCount = 0;
         var entityType = typeof(T);
@@ -110,7 +110,7 @@ internal class OracleCbeDataStorage
     }
 
     public async Task ClearAsync<T>(CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+        where T : class, ICbeEntity
     {
         var tableName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
         using var conn = new OracleConnection(_connectionString);
@@ -125,11 +125,8 @@ internal class OracleCbeDataStorage
         _logger.LogDebug("Cleared {TableName}", tableName);
     }
 
-    public async Task<int> RemoveAsync<T>(
-        IEnumerable<object> entityIds,
-        PropertyInfo deleteOnProperty,
-        CancellationToken cancellationToken = default)
-        where T : ICbeEntity
+    public async Task<int> RemoveAsync<T>(IEnumerable<object> entityIds, PropertyInfo deleteOnProperty, CancellationToken cancellationToken = default)
+        where T : class, ICbeEntity
     {
         var ids = entityIds?.ToList() ?? [];
         if (ids.Count == 0)

@@ -1,15 +1,18 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Vivarni.CBE.DataSources;
+
 #pragma warning disable CS8618
 
-namespace Vivarni.CBE.DataSources.Entities;
+namespace Vivarni.CBE.Entities;
 
 [CsvFileMapping("address")]
+[CbePrimaryKey(nameof(EntityNumber), nameof(TypeOfAddress))]
 public class CbeAddress : ICbeEntity
 {
     /// <summary>
     /// The establishment unit or enterprise number.
     /// </summary>
-    [CsvIndex(0), MaxLength(16), IndexColumn]
+    [CsvIndex(0), MaxLength(16)]
     public string EntityNumber { get; set; }
 
     /// <summary>

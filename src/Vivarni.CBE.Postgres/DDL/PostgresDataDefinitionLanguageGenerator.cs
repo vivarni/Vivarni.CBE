@@ -38,18 +38,20 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
         {
             var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
+            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(PostgresDatabaseObjectNameProvider.GetObjectName)
+                ?? throw new Exception("ICbeEntity has no primary key definition!");
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{tableName} (");
 
             var columnDefinitions = new List<string>();
             foreach (var prop in properties)
             {
-                var columnName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + prop.Name);
+                var columnName = PostgresDatabaseObjectNameProvider.GetObjectName(prop.Name);
                 var sqlType = GetSqlType(prop);
                 columnDefinitions.Add($"    {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements
-                if (prop.GetCustomAttribute<IndexColumnAttribute>() != null)
+                if (prop.GetCustomAttribute<CbeIndexAttribute>() != null)
                 {
                     var indexName = $"IX_{type.Name}_{prop.Name}";
                     var indexStatement = $"CREATE INDEX IF NOT EXISTS {indexName} ON {_schema}.{tableName} ({columnName});";
@@ -57,9 +59,11 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
                 }
             }
 
-            sb.AppendLine(string.Join(",\n", columnDefinitions));
+            sb.AppendLine(string.Join(",\n", columnDefinitions) + ',');
+            sb.AppendLine("    PRIMARY KEY (" + string.Join(", ", primaryKeyColumns) + ")");
             sb.AppendLine(");\n");
         }
+
 
         // Add all index statements after table creation
         if (indexStatements.Count > 0)
@@ -104,8 +108,6 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
         };
 
         var constraints = new List<string>();
-        if (prop.GetCustomAttribute<PrimaryKeyColumn>() != null)
-            constraints.Add("PRIMARY KEY");
 
         if (!isNullable)
             constraints.Add("NOT NULL");
