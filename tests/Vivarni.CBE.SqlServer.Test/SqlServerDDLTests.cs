@@ -12,9 +12,8 @@ public class SqlServerDDLTests
         var generator = new SqlServerDataDefinitionLanguageGenerator("dbo", "");
         var sampleIndices = new[]
         {
-            "IX_CbeAddress_EntityNumber",
-            "IX_CbeDenomination_EntityNumber",
-            "IX_CbeContact_EntityNumber"
+            "IX_CbeBranch_EnterpriseNumber",
+            "IX_CbeEstablishment_EnterpriseNumber"
         };
 
         // Act

@@ -14,7 +14,7 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
 
     public SqlServerDataDefinitionLanguageGenerator(string schema, string tablePrefix)
     {
-        _schema = schema;
+        _schema = SqlServerDatabaseObjectNameProvider.GetObjectName(schema);
         _tablePrefix = tablePrefix;
     }
 
@@ -37,7 +37,7 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
 
         foreach (var type in types)
         {
-            var tableName = _tablePrefix + type.Name;
+            var tableName = SqlServerDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
             var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames
                 ?? throw new Exception("ICbeEntity has no primary key definition!");

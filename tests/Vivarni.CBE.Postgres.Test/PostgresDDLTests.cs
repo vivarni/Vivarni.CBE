@@ -14,9 +14,8 @@ public class PostgresDDLTests
         var generator = new PostgresDataDefinitionLanguageGenerator(opts);
         var sampleIndices = new[]
         {
-            "IX_CbeAddress_EntityNumber",
-            "IX_CbeDenomination_EntityNumber",
-            "IX_CbeContact_EntityNumber"
+            "CREATE INDEX IF NOT EXISTS IX_CbeBranch_EnterpriseNumber ON public.cbe_branch (enterprise_number);",
+            "CREATE INDEX IF NOT EXISTS IX_CbeEstablishment_EnterpriseNumber ON public.cbe_establishment (enterprise_number);"
         };
 
         // Act

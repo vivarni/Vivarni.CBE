@@ -1,8 +1,10 @@
 ﻿using System.Text;
+using Vivarni.CBE.DataSources;
+using Vivarni.CBE.DataStorage;
 
 namespace Vivarni.CBE.Postgres.DDL;
 
-internal class PostgresDatabaseObjectNameProvider
+internal class PostgresDatabaseObjectNameProvider : IDatabaseObjectNameProvider
 {
     // Minimal reserved keywords set—expand for your domain, or leave empty and enforce naming rules upstream.
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
@@ -11,7 +13,10 @@ internal class PostgresDatabaseObjectNameProvider
         "primary", "foreign", "references", "where", "join", "index"
     };
 
-    public static string GetObjectName(string input)
+    public string GetTableName<T>() where T : ICbeEntity
+        => GetObjectName(typeof(T).Name);
+
+    internal static string GetObjectName(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
             throw new ArgumentException("Input cannot be null or empty.", nameof(input));
