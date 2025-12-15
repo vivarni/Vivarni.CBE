@@ -1,6 +1,6 @@
 # Vivarni.CBE
 
-A simple, practical solution to import and synchronize KBO/BCE/CBE data to your own database (e.g., SQL Server, Postgres, Sqlite, Oracle, ...). It provides clear source abstractions, extensible storage backends. The acronym CBE stand for "_Crossroads Bank for Enterprises in Belgium_", and is also known as:
+A simple, practical solution to import and synchronize KBO/BCE/CBE data to your own database (e.g., SQL Server, Postgres, Sqlite, Oracle, ...). It provides clear source abstractions and extensible storage backends. The acronym CBE stand for "_Crossroads Bank for Enterprises in Belgium_", and is also known as:
 
  * Dutch: _Kruispuntbank van Ondernemingen_ 
  * French: _Banque-Carrefour des Entreprises_
