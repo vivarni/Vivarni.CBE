@@ -11,8 +11,8 @@ CBE data is provided by the Belgian Governement and is publicly available: [http
 ## Have a local copy of CBE data; synchronized daily
 
 1️⃣ Pull data from [the official sources](https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data) of the Belgian Governement.  
-2️⃣ Maybe cache the files somewhere, using [some storage](https://github.com/vivarni/Vivarni.CBE/blob/master/src/Vivarni.CBE/DataStorage/ICbeDataStorage.cs) available.  
-3️⃣ Store the actual data in a [database/storage](https://github.com/vivarni/Vivarni.CBE/blob/develop/src/Vivarni.CBE/DataSources/ICbeDataSourceCache.cs) of your liking  
+2️⃣ Maybe cache the files somewhere, using [some storage](https://github.com/vivarni/Vivarni.CBE/blob/develop/src/Vivarni.CBE/DataSources/ICbeDataSourceCache.cs) available.  
+3️⃣ Store the actual data in a [database/storage](https://github.com/vivarni/Vivarni.CBE/blob/master/src/Vivarni.CBE/DataStorage/ICbeDataStorage.cs) of your liking  
 4️⃣ Use it in your code as a repository, EF Core DbSet, or service
 
 ## Quickstart 🚀
