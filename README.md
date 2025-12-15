@@ -1,14 +1,12 @@
 # Vivarni.CBE
 
-A simple, practical solution to import and synchronize KBO/BCE/CBE data into your own database (e.g., SQL Server, Postgres, Sqlite, Oracle, ...). It provides clear source abstractions, extensible storage backends, and synchronization state tracking so your enterprise registers stay reliably up to date. CBE is the _Crossroads Bank for Enterprises in Belgium_ and is also known as:
+A simple, practical solution to import and synchronize KBO/BCE/CBE data to your own database (e.g., SQL Server, Postgres, Sqlite, Oracle, ...). It provides clear source abstractions, extensible storage backends. The acronym CBE stand for "_Crossroads Bank for Enterprises in Belgium_", and is also known as:
 
  * Dutch: _Kruispuntbank van Ondernemingen_ 
  * French: _Banque-Carrefour des Entreprises_
  * German: _Zentrale Datenbank der Unternehmen_
 
-The data provided by the CBE is public available at; you simply need an account on the official website to access and download the datasets. Official federal governement website for CBE Open Data: [https://economie.fgov.be/](https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data)
-
-Want to experiment without your own DB? See the sample projects in `sample/`. It demonstrates an end-to-end flow on a local SQLite and Postgres database!
+CBE data is provided by the Belgian Governement and is publicly available: [https://economie.fgov.be/](https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data)
 
 ## Have a local copy of CBE data; synchronized daily
 
