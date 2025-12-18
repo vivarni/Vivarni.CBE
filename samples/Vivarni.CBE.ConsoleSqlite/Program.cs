@@ -22,8 +22,11 @@ internal class Program
                 .AddUserSecrets<Program>()
                 .Build();
 
-            var cbeUser = configuration["cbe:login"] ?? string.Empty;
-            var cbePassword = configuration["cbe:password"] ?? string.Empty;
+            var httpUser = configuration["cbe:http-login"] ?? string.Empty;
+            var httpPassword = configuration["cbe:http-password"] ?? string.Empty;
+
+            var ftpUser = configuration["cbe:ftp-login"] ?? string.Empty;
+            var ftpPassword = configuration["cbe:ftp-password"] ?? string.Empty;
 
             var serviceProvider = new ServiceCollection()
                 .AddLogging(builder => builder.AddSerilog())
@@ -31,7 +34,8 @@ internal class Program
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
                     .UseSqlite("Data Source=kbo.db")
-                    .UseHttpSource(cbeUser, cbePassword)
+                    //.UseHttpSource(httpUser, httpPassword)
+                    .UseFtpsSource(ftpUser, ftpPassword)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
                 .BuildServiceProvider();
 

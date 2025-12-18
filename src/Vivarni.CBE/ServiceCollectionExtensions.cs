@@ -74,9 +74,13 @@ public class CbeIntegrationOptions
     /// <param name="userName">Username for access to the CBE Open Data.</param>
     /// <param name="password">Password for access to the CBE Open Data.</param>
     /// <returns>The same <see cref="CbeIntegrationOptions"/> instance, so that configuration can be chained.</returns>
-    public CbeIntegrationOptions UseFTPS(string userName, string password)
+    public CbeIntegrationOptions UseFtpsSource(string userName, string password)
     {
-        throw new NotImplementedException();
+        var credentialProvider = new SimpleCredentialProvider(userName, System.Text.Encoding.UTF8.GetBytes(password));
+        var cbeDataSource = new FtpsDataSource(credentialProvider);
+
+        DataSourceFactory = (s) => cbeDataSource;
+        return this;
     }
 
     /// <summary>
