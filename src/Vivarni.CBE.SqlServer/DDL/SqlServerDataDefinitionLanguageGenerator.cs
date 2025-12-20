@@ -38,11 +38,12 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
         foreach (var type in types)
         {
             var tableName = SqlServerDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
+            var idColumnName = SqlServerDatabaseObjectNameProvider.GetObjectName("CbeId");
             var properties = type.GetProperties();
-            var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames;
 
             sb.AppendLine($"IF OBJECT_ID('{_schema}.{tableName}', 'U') IS NULL\nBEGIN");
             sb.AppendLine($"CREATE TABLE [{_schema}].[{tableName}] (");
+            sb.AppendLine($"    [{idColumnName}] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,");
 
             foreach (var prop in properties)
             {
@@ -59,9 +60,6 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
                     indexStatements.Add(indexStatement);
                 }
             }
-
-            if (primaryKeyColumns != null)
-                sb.AppendLine("    PRIMARY KEY (" + string.Join(',', primaryKeyColumns) + ")");
             sb.AppendLine(")");
             sb.AppendLine("END\n\n");
         }

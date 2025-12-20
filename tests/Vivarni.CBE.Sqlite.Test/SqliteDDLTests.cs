@@ -12,8 +12,8 @@ public class SqliteDDLTests
         var generator = new SqliteDataDefinitionLanguageGenerator();
         var sampleIndices = new[]
         {
-            "CREATE INDEX IF NOT EXISTS \"IX_CbeBranch_EnterpriseNumber\" ON \"CbeBranch\" (\"EnterpriseNumber\");",
-            "CREATE INDEX IF NOT EXISTS \"IX_CbeEstablishment_EnterpriseNumber\" ON \"CbeEstablishment\" (\"EnterpriseNumber\")"
+            "CREATE INDEX IF NOT EXISTS IX_CbeBranch_EnterpriseNumber ON CbeBranch (EnterpriseNumber);",
+            "CREATE INDEX IF NOT EXISTS IX_CbeDenomination_EntityNumber ON CbeDenomination (EntityNumber);"
         };
 
         // Act

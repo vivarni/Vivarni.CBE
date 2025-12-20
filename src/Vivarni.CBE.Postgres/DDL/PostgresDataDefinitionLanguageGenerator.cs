@@ -37,12 +37,14 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
         foreach (var type in types)
         {
             var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
+            var idColumnName = PostgresDatabaseObjectNameProvider.GetObjectName("CbeId");
             var properties = type.GetProperties();
             var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(PostgresDatabaseObjectNameProvider.GetObjectName);
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{tableName} (");
-
             var columnDefinitions = new List<string>();
+            // Add ID column as the first column, auto-incrementing
+            columnDefinitions.Add($"    {idColumnName} SERIAL PRIMARY KEY");
             foreach (var prop in properties)
             {
                 var columnName = PostgresDatabaseObjectNameProvider.GetObjectName(prop.Name);
@@ -57,10 +59,7 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
                     indexStatements.Add(indexStatement);
                 }
             }
-
             sb.AppendLine(string.Join(",\n", columnDefinitions));
-            if (primaryKeyColumns != null)
-                sb.AppendLine("    ,PRIMARY KEY (" + string.Join(", ", primaryKeyColumns) + ")");
             sb.AppendLine(");\n");
         }
 

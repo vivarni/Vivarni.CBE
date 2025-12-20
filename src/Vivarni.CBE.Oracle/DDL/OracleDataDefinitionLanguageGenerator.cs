@@ -57,6 +57,7 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
         foreach (var type in types)
         {
             var indexStatements = new List<string>();
+            var idColumnName = OracleDatabaseObjectNameProvider.GetObjectName("CbeId");
             var tableName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + type.Name);
             var properties = type.GetProperties();
             var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(OracleDatabaseObjectNameProvider.GetObjectName);
@@ -70,6 +71,8 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
             sb.AppendLine($"        EXECUTE IMMEDIATE 'CREATE TABLE {tableName} (");
 
             var columnDefinitions = new List<string>();
+            // Add ID column as the first column, auto-incrementing
+            columnDefinitions.Add($"            {idColumnName} NUMBER(10) GENERATED ALWAYS AS IDENTITY PRIMARY KEY");
             foreach (var prop in properties)
             {
                 var columnName = OracleDatabaseObjectNameProvider.GetObjectName(prop.Name);
@@ -84,10 +87,7 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                     indexStatements.Add(indexStatement);
                 }
             }
-
             sb.AppendLine(string.Join(",\n", columnDefinitions));
-            if (primaryKeyColumns != null)
-                sb.AppendLine("            ,PRIMARY KEY (" + string.Join(", ", primaryKeyColumns) + ")");
             sb.AppendLine($"        )';");
             sb.AppendLine($"    END IF;");
             sb.AppendLine();

@@ -32,14 +32,14 @@ internal class SqliteCbeDataStorage
     {
         var totalImportCount = 0;
         var entityType = typeof(T);
-        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(entityType.Name);
+        var tableName = SqliteDatabaseObjectNameProvider.GetObjectName(entityType.Name);
         var properties = entityType.GetProperties();
 
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
 
         // Build INSERT statement with all columns
-        var columnNames = properties.Select(p => SqliteDatabaseObjectNameProvider.QuoteIdentifier(p.Name));
+        var columnNames = properties.Select(p => SqliteDatabaseObjectNameProvider.GetObjectName(p.Name));
         var parameterNames = properties.Select(p => $"@{p.Name}");
         var insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnNames)}) VALUES ({string.Join(", ", parameterNames)})";
 
@@ -91,7 +91,7 @@ internal class SqliteCbeDataStorage
     public async Task ClearAsync<T>(CancellationToken cancellationToken = default)
         where T : class, ICbeEntity
     {
-        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(typeof(T).Name);
+        var tableName = SqliteDatabaseObjectNameProvider.GetObjectName(typeof(T).Name);
         using var conn = new SqliteConnection(_connectionString);
         using var command = conn.CreateCommand();
 
@@ -120,8 +120,8 @@ internal class SqliteCbeDataStorage
         using var command = conn.CreateCommand();
 
         var ids = entityIds.ToArray();
-        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(typeof(T).Name);
-        var columnName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(deleteOnProperty.Name);
+        var tableName = SqliteDatabaseObjectNameProvider.GetObjectName(typeof(T).Name);
+        var columnName = SqliteDatabaseObjectNameProvider.GetObjectName(deleteOnProperty.Name);
 
         await conn.OpenAsync(cancellationToken);
 
