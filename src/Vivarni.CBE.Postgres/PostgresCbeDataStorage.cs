@@ -15,9 +15,6 @@ internal class PostgresCbeDataStorage
     : ICbeDataStorage
     , ICbeStateRegistry
 {
-    private const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
-    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new() { WriteIndented = true };
-
     private readonly int _batchSize;
     private readonly string _connectionString;
     private readonly string _schema;
@@ -224,55 +221,35 @@ internal class PostgresCbeDataStorage
         return value;
     }
 
-    public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)
+    private const string SYNC_EXTRACT_NUMBER_VARIABLE = "SyncCurrentExtractNumber";
+
+    public async Task<int> GetCurrentExtractNumber(CancellationToken cancellationToken = default)
     {
-        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName($"{_tablePrefix}StateRegistry");
-
-        using var conn = new NpgsqlConnection(_connectionString);
+        var tableName = $"{_schema}.{_tablePrefix}StateRegistry";
+        await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
-        using var command = conn.CreateCommand();
-
-        command.CommandText = $"SELECT value FROM {_schema}.{tableName} WHERE variable = @Variable";
-        var parameter = command.CreateParameter();
-        parameter.ParameterName = "@Variable";
-        parameter.Value = SYNC_PROCESSED_FILES_VARIABLE;
-        command.Parameters.Add(parameter);
-
-        var result = await command.ExecuteScalarAsync(cancellationToken) as string;
-
-        if (string.IsNullOrEmpty(result))
-            return [];
-
-        var list = JsonSerializer.Deserialize<List<string>>(result) ?? [];
-        return list.Select(s => new CbeOpenDataFile(s));
+        await using var command = conn.CreateCommand();
+        command.CommandText = $"SELECT \"Value\" FROM {tableName} WHERE \"Variable\" = @Variable";
+        command.Parameters.AddWithValue("@Variable", SYNC_EXTRACT_NUMBER_VARIABLE);
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        if (result == null || result == DBNull.Value)
+            return -1;
+        if (int.TryParse(result.ToString(), out var value))
+            return value;
+        return -1;
     }
 
-    public async Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken)
+    public async Task SetCurrentExtractNumber(int extractNumber, CancellationToken cancellationToken)
     {
-        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName($"{_tablePrefix}StateRegistry");
-
-        using var conn = new NpgsqlConnection(_connectionString);
+        var tableName = $"{_schema}.{_tablePrefix}StateRegistry";
+        await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
-
-        var data = processedFiles.Select(s => s.Filename);
-        var json = JsonSerializer.Serialize(data, s_jsonSerializerOptions);
-
-        using var command = conn.CreateCommand();
+        await using var command = conn.CreateCommand();
         command.CommandText = $@"
-                INSERT INTO {_schema}.{tableName} (Variable, Value) VALUES (@Variable, @Value)
-                ON CONFLICT (Variable)
-                DO UPDATE SET Value = EXCLUDED.Value";
-
-        var variableParam = command.CreateParameter();
-        variableParam.ParameterName = "@Variable";
-        variableParam.Value = SYNC_PROCESSED_FILES_VARIABLE;
-        command.Parameters.Add(variableParam);
-
-        var valueParam = command.CreateParameter();
-        valueParam.ParameterName = "@Value";
-        valueParam.Value = json;
-        command.Parameters.Add(valueParam);
-
+            INSERT INTO {tableName} (\"Variable\", \"Value\") VALUES (@Variable, @Value)
+            ON CONFLICT (\"Variable\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";";
+        command.Parameters.AddWithValue("@Variable", SYNC_EXTRACT_NUMBER_VARIABLE);
+        command.Parameters.AddWithValue("@Value", extractNumber.ToString());
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 }
