@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Vivarni.CBE.Sqlite.Setup;
 
@@ -28,12 +29,13 @@ internal class Program
             var ftpUser = configuration["cbe:ftp-login"] ?? string.Empty;
             var ftpPassword = configuration["cbe:ftp-password"] ?? string.Empty;
 
+            var connectionString = GetConnectionString();
             var serviceProvider = new ServiceCollection()
                 .AddLogging(builder => builder.AddSerilog())
                 .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
-                    .UseSqlite("Data Source=kbo.db")
+                    .UseSqlite(connectionString)
                     //.UseHttpSource(httpUser, httpPassword)
                     .UseFtpsSource(ftpUser, ftpPassword)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
@@ -53,5 +55,19 @@ internal class Program
         {
             Log.CloseAndFlush();
         }
+    }
+
+    private static string GetConnectionString()
+    {
+        var currentDirectory = Directory.GetCurrentDirectory();
+        var solutionDirectory = currentDirectory;
+        while (solutionDirectory != null && !Directory.GetFiles(solutionDirectory, "*.slnx").Any())
+        {
+            solutionDirectory = Directory.GetParent(solutionDirectory)?.FullName;
+        }
+        solutionDirectory ??= currentDirectory; // Fallback to current directory if .slnx not found
+        var dbPath = Path.Combine(solutionDirectory, "kbo.db");
+
+        return $"Data Source={dbPath}";
     }
 }
