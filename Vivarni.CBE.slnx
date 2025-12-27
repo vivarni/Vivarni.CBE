@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/samples/">
     <Project Path="samples/Vivarni.CBE.Samples.ConsoleDDL/Vivarni.CBE.Samples.ConsoleDDL.csproj" />
+    <Project Path="samples/Vivarni.CBE.Samples.Web/Vivarni.CBE.Samples.Web.csproj" />
     <Project Path="samples/Vivarni.CBE.Samples.PostgresEntityFrameworkCore/Vivarni.CBE.Samples.PostgresEntityFrameworkCore.csproj" />
     <Project Path="samples/Vivarni.CBE.Samples.SqliteDapper/Vivarni.CBE.Samples.SqliteDapper.csproj" />
   </Folder>
