@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Vivarni.CBE.Sqlite.Setup;
 
@@ -22,22 +23,28 @@ internal class Program
                 .AddUserSecrets<Program>()
                 .Build();
 
-            var cbeUser = configuration["cbe:login"] ?? string.Empty;
-            var cbePassword = configuration["cbe:password"] ?? string.Empty;
+            var httpUser = configuration["cbe:http-login"] ?? string.Empty;
+            var httpPassword = configuration["cbe:http-password"] ?? string.Empty;
 
+            var ftpUser = configuration["cbe:ftp-login"] ?? string.Empty;
+            var ftpPassword = configuration["cbe:ftp-password"] ?? string.Empty;
+
+            var connectionString = GetConnectionString();
             var serviceProvider = new ServiceCollection()
                 .AddLogging(builder => builder.AddSerilog())
                 .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
-                    .UseSqlite("Data Source=kbo.db")
-                    .UseFileSystemCache("c:/temp/kbo-light"))
+                    .UseSqlite(connectionString)
+                    //.UseHttpSource(httpUser, httpPassword)
+                    .UseFtpsSource(ftpUser, ftpPassword)
+                    .UseFileSystemCache("c:/temp/kbo-cache"))
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
             var demo = serviceProvider.GetRequiredService<SearchDemo>();
 
-            await cbe.Sync();
+            await cbe.UpdateCbeDataAsync();
             await demo.Run();
         }
         catch (Exception ex)
@@ -48,5 +55,19 @@ internal class Program
         {
             Log.CloseAndFlush();
         }
+    }
+
+    private static string GetConnectionString()
+    {
+        var currentDirectory = Directory.GetCurrentDirectory();
+        var solutionDirectory = currentDirectory;
+        while (solutionDirectory != null && !Directory.GetFiles(solutionDirectory, "*.slnx").Any())
+        {
+            solutionDirectory = Directory.GetParent(solutionDirectory)?.FullName;
+        }
+        solutionDirectory ??= currentDirectory; // Fallback to current directory if .slnx not found
+        var dbPath = Path.Combine(solutionDirectory, "kbo.db");
+
+        return $"Data Source={dbPath}";
     }
 }

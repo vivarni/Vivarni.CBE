@@ -4,10 +4,6 @@
     <Project Path="samples/Vivarni.CBE.ConsoleSqlite/Vivarni.CBE.ConsoleSqlite.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Vivarni.CBE.Oracle.Test/Vivarni.CBE.Oracle.Test.csproj" />
-    <Project Path="tests/Vivarni.CBE.Postgres.Test/Vivarni.CBE.Postgres.Test.csproj" />
-    <Project Path="tests/Vivarni.CBE.Sqlite.Test/Vivarni.CBE.Sqlite.Test.csproj" />
-    <Project Path="tests/Vivarni.CBE.SqlServer.Test/Vivarni.CBE.SqlServer.Test.csproj" />
     <Project Path="tests/Vivarni.CBE.Test/Vivarni.CBE.Test.csproj" />
   </Folder>
   <Project Path="src/Vivarni.CBE.Oracle/Vivarni.CBE.Oracle.csproj" />

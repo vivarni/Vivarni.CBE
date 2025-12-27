@@ -32,14 +32,14 @@ internal class SqliteCbeDataStorage
     {
         var totalImportCount = 0;
         var entityType = typeof(T);
-        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(entityType.Name);
+        var tableName = SqliteDatabaseObjectNameProvider.GetObjectName(entityType.Name);
         var properties = entityType.GetProperties();
 
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
 
         // Build INSERT statement with all columns
-        var columnNames = properties.Select(p => SqliteDatabaseObjectNameProvider.QuoteIdentifier(p.Name));
+        var columnNames = properties.Select(p => SqliteDatabaseObjectNameProvider.GetObjectName(p.Name));
         var parameterNames = properties.Select(p => $"@{p.Name}");
         var insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnNames)}) VALUES ({string.Join(", ", parameterNames)})";
 
@@ -91,7 +91,7 @@ internal class SqliteCbeDataStorage
     public async Task ClearAsync<T>(CancellationToken cancellationToken = default)
         where T : class, ICbeEntity
     {
-        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(typeof(T).Name);
+        var tableName = SqliteDatabaseObjectNameProvider.GetObjectName(typeof(T).Name);
         using var conn = new SqliteConnection(_connectionString);
         using var command = conn.CreateCommand();
 
@@ -99,8 +99,6 @@ internal class SqliteCbeDataStorage
         command.CommandText = $"DELETE FROM {tableName}";
         command.CommandType = CommandType.Text;
         await command.ExecuteNonQueryAsync(cancellationToken);
-
-        _logger.LogDebug("Cleared {TableName}", tableName);
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -113,7 +111,6 @@ internal class SqliteCbeDataStorage
 
         await conn.OpenAsync(cancellationToken);
         await command.ExecuteNonQueryAsync(cancellationToken);
-        _logger.LogDebug("Executed initialisation SQL script");
     }
 
     public async Task<int> RemoveAsync<T>(IEnumerable<object> entityIds, PropertyInfo deleteOnProperty, CancellationToken cancellationToken = default)
@@ -123,8 +120,8 @@ internal class SqliteCbeDataStorage
         using var command = conn.CreateCommand();
 
         var ids = entityIds.ToArray();
-        var tableName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(typeof(T).Name);
-        var columnName = SqliteDatabaseObjectNameProvider.QuoteIdentifier(deleteOnProperty.Name);
+        var tableName = SqliteDatabaseObjectNameProvider.GetObjectName(typeof(T).Name);
+        var columnName = SqliteDatabaseObjectNameProvider.GetObjectName(deleteOnProperty.Name);
 
         await conn.OpenAsync(cancellationToken);
 
@@ -146,60 +143,32 @@ internal class SqliteCbeDataStorage
         return await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)
+    private const string SYNC_EXTRACT_NUMBER_VARIABLE = "SyncCurrentExtractNumber";
+
+    public async Task<int> GetCurrentExtractNumber(CancellationToken cancellationToken = default)
     {
-        const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
-
         using var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync(cancellationToken);
         using var command = conn.CreateCommand();
-
-        command.CommandText = "SELECT \"Value\" FROM \"StateRegistry\" WHERE \"Variable\" = @Variable";
-        var parameter = command.CreateParameter();
-        parameter.ParameterName = "@Variable";
-        parameter.Value = SYNC_PROCESSED_FILES_VARIABLE;
-        command.Parameters.Add(parameter);
-
-        var result = await command.ExecuteScalarAsync(cancellationToken) as string;
-
-        if (string.IsNullOrEmpty(result))
-        {
-            return Enumerable.Empty<CbeOpenDataFile>();
-        }
-
-        var list = JsonSerializer.Deserialize<List<string>>(result) ?? [];
-        return list.Select(s => new CbeOpenDataFile(s));
+        command.CommandText = "SELECT Value FROM StateRegistry WHERE Variable = @Variable";
+        command.Parameters.AddWithValue("@Variable", SYNC_EXTRACT_NUMBER_VARIABLE);
+        await conn.OpenAsync(cancellationToken);
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        if (result == null || result == DBNull.Value)
+            return -1;
+        if (int.TryParse(result.ToString(), out var value))
+            return value;
+        return -1;
     }
 
-    public async Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken)
+    public async Task SetCurrentExtractNumber(int extractNumber, CancellationToken cancellationToken)
     {
-        const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
-
         using var conn = new SqliteConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
-
-        var data = processedFiles.Select(s => s.Filename);
-        var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-
-        const string upsertQuery = @"
-                INSERT INTO ""StateRegistry""(""Variable"", ""Value"")
-                VALUES(@Variable, @Value)
-                ON CONFLICT(""Variable"")
-                DO UPDATE SET ""Value"" = excluded.""Value""";
-
         using var command = conn.CreateCommand();
-        command.CommandText = upsertQuery;
-
-        var variableParam = command.CreateParameter();
-        variableParam.ParameterName = "@Variable";
-        variableParam.Value = SYNC_PROCESSED_FILES_VARIABLE;
-        command.Parameters.Add(variableParam);
-
-        var valueParam = command.CreateParameter();
-        valueParam.ParameterName = "@Value";
-        valueParam.Value = json;
-        command.Parameters.Add(valueParam);
-
+        command.CommandText = @"INSERT INTO StateRegistry (Variable, Value) VALUES (@Variable, @Value)
+            ON CONFLICT(Variable) DO UPDATE SET Value = excluded.Value;";
+        command.Parameters.AddWithValue("@Variable", SYNC_EXTRACT_NUMBER_VARIABLE);
+        command.Parameters.AddWithValue("@Value", extractNumber.ToString());
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 }

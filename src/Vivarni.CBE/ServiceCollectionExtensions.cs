@@ -7,9 +7,9 @@ namespace Vivarni.CBE;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddVivarniCBE(this IServiceCollection services, Func<VivarniCbeOptions, VivarniCbeOptions> clientBuilder)
+    public static IServiceCollection AddVivarniCBE(this IServiceCollection services, Func<CbeIntegrationOptions, CbeIntegrationOptions> clientBuilder)
     {
-        var options = new VivarniCbeOptions();
+        var options = new CbeIntegrationOptions();
         options = clientBuilder(options);
 
         if (options.DataStorageFactory == null)
@@ -23,34 +23,41 @@ public static class ServiceCollectionExtensions
 
         if (options.DatabaseObjectNameProviderFactory != null)
             services.AddScoped(options.DatabaseObjectNameProviderFactory);
+        if (options.DataSourceFactory != null)
+            services.AddScoped(options.DataSourceFactory);
+        if (options.DataSourceCacheFactory != null)
+            services.AddScoped(options.DataSourceCacheFactory);
 
         services.AddScoped(options.SynchronisationStateRegistryFactory);
         services.AddScoped(options.DataStorageFactory);
 
         services.AddScoped<ICbeService, CbeService>();
-        services.AddScoped<ICbeDataSource>(s =>
-        {
-            var source = options.DataSourceFactory == null ? null : options.DataSourceFactory(s);
-            var cache = options.DataSourceCacheFactory == null ? null : options.DataSourceCacheFactory(s);
-            return new CbeDataSourceProxy(source, cache);
-        });
+        services.AddScoped<CbeDataSourceProxy>();
 
         return services;
     }
 }
 
-public class VivarniCbeOptions
+public class CbeIntegrationOptions
 {
     // Data sources (HTTP/FTP + Caching)
     public Func<IServiceProvider, ICbeDataSource>? DataSourceFactory { get; set; }
-    public Func<IServiceProvider, ICbeDataSource>? DataSourceCacheFactory { get; set; }
+    public Func<IServiceProvider, ICbeDataSourceCache>? DataSourceCacheFactory { get; set; }
 
     // Data storage (tables + synchronisation state)
     public Func<IServiceProvider, ICbeDataStorage>? DataStorageFactory { get; set; }
     public Func<IServiceProvider, ICbeStateRegistry>? SynchronisationStateRegistryFactory { get; set; }
     public Func<IServiceProvider, IDatabaseObjectNameProvider>? DatabaseObjectNameProviderFactory { get; set; }
 
-    public VivarniCbeOptions UseHttpSource(string userName, string password)
+    /// <summary>
+    /// Configures the CBE integration to use the web interface from the Belgian Federal Government to
+    /// download the CBE ZIP files (both FULL and UPDATE files).
+    /// https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data
+    /// </summary>
+    /// <param name="userName">Username for access to the CBE Open Data.</param>
+    /// <param name="password">Password for access to the CBE Open Data.</param>
+    /// <returns>The same <see cref="CbeIntegrationOptions"/> instance, so that configuration can be chained.</returns>
+    public CbeIntegrationOptions UseHttpSource(string userName, string password)
     {
         var credentialProvider = new SimpleCredentialProvider(userName, System.Text.Encoding.UTF8.GetBytes(password));
         var cbeDataSource = new HttpCbeDataSource(credentialProvider);
@@ -59,12 +66,32 @@ public class VivarniCbeOptions
         return this;
     }
 
-    public VivarniCbeOptions UseFTPS(string userName, string password)
+    /// <summary>
+    /// Configures the CBE integration to use the FTPS server from the Belgian Federal Government to
+    /// download the CBE ZIP files (both FULL and UPDATE files).
+    /// https://economie.fgov.be/en/themes/enterprises/crossroads-bank-enterprises/services-everyone/public-data-available-reuse/cbe-open-data
+    /// </summary>
+    /// <param name="userName">Username for access to the CBE Open Data.</param>
+    /// <param name="password">Password for access to the CBE Open Data.</param>
+    /// <returns>The same <see cref="CbeIntegrationOptions"/> instance, so that configuration can be chained.</returns>
+    public CbeIntegrationOptions UseFtpsSource(string userName, string password)
     {
-        throw new NotImplementedException();
+        var credentialProvider = new SimpleCredentialProvider(userName, System.Text.Encoding.UTF8.GetBytes(password));
+        var cbeDataSource = new FtpsDataSource(credentialProvider);
+
+        DataSourceFactory = (s) => cbeDataSource;
+        return this;
     }
 
-    public VivarniCbeOptions UseFileSystemCache(string path)
+    /// <summary>
+    /// Configures the CBE integration to use the file system as a cache for all ZIP files from the
+    /// CBE. This includes both FULL and UPDATE files. The cache is also can be used without active
+    /// <see cref="ICbeDataSource"/> such as the FTP or HTTP clients. Usefull if you have other
+    /// systems responsible for obtaining the CBE Zip files.
+    /// </summary>
+    /// <param name="path">File system path where the ZIP files should be stored.</param>
+    /// <returns>The same <see cref="CbeIntegrationOptions"/> instance, so that configuration can be chained.</returns>
+    public CbeIntegrationOptions UseFileSystemCache(string path)
     {
         DataSourceCacheFactory = (s) => new FileSystemCbeDataSource(path);
         return this;

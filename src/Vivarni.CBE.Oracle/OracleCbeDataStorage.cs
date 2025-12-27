@@ -1,6 +1,5 @@
 ﻿using System.Data;
 using System.Reflection;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using Vivarni.CBE.DataSources;
@@ -15,9 +14,6 @@ internal class OracleCbeDataStorage
     : ICbeDataStorage
     , ICbeStateRegistry
 {
-    private const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
-    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new() { WriteIndented = true };
-
     private readonly string _connectionString;
     private readonly string _tablePrefix;
     private readonly int _batchSize;
@@ -45,7 +41,6 @@ internal class OracleCbeDataStorage
 
         await conn.OpenAsync(cancellationToken);
         await command.ExecuteNonQueryAsync(cancellationToken);
-        _logger.LogDebug("Executed initialisation SQL script");
     }
 
     public async Task AddRangeAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
@@ -121,8 +116,6 @@ internal class OracleCbeDataStorage
 
         await conn.OpenAsync(cancellationToken);
         await command.ExecuteNonQueryAsync(cancellationToken);
-
-        _logger.LogDebug("Cleared {TableName}", tableName);
     }
 
     public async Task<int> RemoveAsync<T>(IEnumerable<object> entityIds, PropertyInfo deleteOnProperty, CancellationToken cancellationToken = default)
@@ -157,67 +150,6 @@ internal class OracleCbeDataStorage
 
         var affected = await command.ExecuteNonQueryAsync(cancellationToken);
         return affected;
-    }
-
-    public async Task<IEnumerable<CbeOpenDataFile>> GetProcessedFiles(CancellationToken cancellationToken)
-    {
-        var tableName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + "StateRegistry");
-
-        using var conn = new OracleConnection(_connectionString);
-        await conn.OpenAsync(cancellationToken);
-        using var command = conn.CreateCommand();
-
-        command.CommandText = $"SELECT Value FROM {tableName} WHERE Variable = :Variable";
-        var parameter = command.CreateParameter();
-        parameter.ParameterName = "Variable";
-        parameter.Value = SYNC_PROCESSED_FILES_VARIABLE;
-        command.Parameters.Add(parameter);
-
-        var result = await command.ExecuteScalarAsync(cancellationToken) as string;
-
-        if (string.IsNullOrEmpty(result))
-        {
-            return [];
-        }
-
-        var list = JsonSerializer.Deserialize<List<string>>(result) ?? [];
-        return list.Select(s => new CbeOpenDataFile(s));
-    }
-
-    public async Task UpdateProcessedFileList(List<CbeOpenDataFile> processedFiles, CancellationToken cancellationToken)
-    {
-        var tableName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + "StateRegistry");
-
-        using var conn = new OracleConnection(_connectionString);
-        await conn.OpenAsync(cancellationToken);
-
-        var data = processedFiles.Select(s => s.Filename);
-        var json = JsonSerializer.Serialize(data, s_jsonSerializerOptions);
-
-        // Oracle MERGE statement for upsert functionality
-        const string MergeQuery = @"
-            MERGE INTO {0} target
-            USING (SELECT :Variable as Variable, :Value as Value FROM dual) source
-            ON (target.Variable = source.Variable)
-            WHEN MATCHED THEN
-                UPDATE SET target.Value = source.Value
-            WHEN NOT MATCHED THEN
-                INSERT (Variable, Value) VALUES (source.Variable, source.Value)";
-
-        using var command = conn.CreateCommand();
-        command.CommandText = string.Format(MergeQuery, tableName);
-
-        var variableParam = command.CreateParameter();
-        variableParam.ParameterName = "Variable";
-        variableParam.Value = SYNC_PROCESSED_FILES_VARIABLE;
-        command.Parameters.Add(variableParam);
-
-        var valueParam = command.CreateParameter();
-        valueParam.ParameterName = "Value";
-        valueParam.Value = json;
-        command.Parameters.Add(valueParam);
-
-        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private static OracleDbType GetOracleDbType(Type propertyType)
@@ -276,5 +208,40 @@ internal class OracleCbeDataStorage
             return value.ToString()!;
 
         return value;
+    }
+
+    private const string SYNC_EXTRACT_NUMBER_VARIABLE = "SyncCurrentExtractNumber";
+
+    public async Task<int> GetCurrentExtractNumber(CancellationToken cancellationToken = default)
+    {
+        using var conn = new OracleConnection(_connectionString);
+        using var command = conn.CreateCommand();
+        var tableName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + "StateRegistry");
+        command.CommandText = $"SELECT Value FROM {tableName} WHERE Variable = :Variable";
+        command.Parameters.Add(new OracleParameter("Variable", SYNC_EXTRACT_NUMBER_VARIABLE));
+        await conn.OpenAsync(cancellationToken);
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        if (result == null || result == DBNull.Value)
+            return -1;
+        if (int.TryParse(result.ToString(), out var value))
+            return value;
+        return -1;
+    }
+
+    public async Task SetCurrentExtractNumber(int extractNumber, CancellationToken cancellationToken)
+    {
+        using var conn = new OracleConnection(_connectionString);
+        await conn.OpenAsync(cancellationToken);
+        var tableName = OracleDatabaseObjectNameProvider.GetObjectName(_tablePrefix + "StateRegistry");
+        using var command = conn.CreateCommand();
+        command.CommandText = $@"
+            MERGE INTO {tableName} t
+            USING (SELECT :Variable AS Variable, :Value AS Value FROM dual) s
+            ON (t.Variable = s.Variable)
+            WHEN MATCHED THEN UPDATE SET t.Value = s.Value
+            WHEN NOT MATCHED THEN INSERT (Variable, Value) VALUES (s.Variable, s.Value)";
+        command.Parameters.Add(new OracleParameter("Variable", SYNC_EXTRACT_NUMBER_VARIABLE));
+        command.Parameters.Add(new OracleParameter("Value", extractNumber.ToString()));
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 }

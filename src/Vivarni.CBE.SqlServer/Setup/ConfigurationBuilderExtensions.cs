@@ -5,22 +5,22 @@ namespace Vivarni.CBE.SqlServer.Setup;
 
 public static class ConfigurationBuilderExtensions
 {
-    public static VivarniCbeOptions UseSqlServer(this VivarniCbeOptions builder, string connectionString, string schema = "dbo", string tablePrefix = "")
+    public static CbeIntegrationOptions UseSqlServer(this CbeIntegrationOptions options, string connectionString, string schema = "dbo", string tablePrefix = "")
     {
-        builder.DataStorageFactory = (s) =>
+        options.DataStorageFactory = (s) =>
         {
             var logger = s.GetRequiredService<ILogger<SqlServerCbeDataStorage>>();
             var storage = new SqlServerCbeDataStorage(logger, connectionString, schema, tablePrefix);
             return storage;
         };
 
-        builder.SynchronisationStateRegistryFactory = (s) =>
+        options.SynchronisationStateRegistryFactory = (s) =>
         {
             var logger = s.GetRequiredService<ILogger<SqlServerCbeDataStorage>>();
             var storage = new SqlServerCbeDataStorage(logger, connectionString, schema, tablePrefix);
             return storage;
         };
 
-        return builder;
+        return options;
     }
 }

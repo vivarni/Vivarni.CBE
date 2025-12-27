@@ -6,7 +6,7 @@ using Vivarni.CBE.DataSources;
 namespace Vivarni.CBE.Entities;
 
 [CsvFileMapping("activity")]
-[CbePrimaryKey(nameof(EntityNumber), nameof(NaceVersion), nameof(NaceCode), nameof(Classification), nameof(ActivityGroup))]
+//[CbePrimaryKey(nameof(EntityNumber), nameof(NaceVersion), nameof(NaceCode), nameof(Classification), nameof(ActivityGroup))]
 public class CbeActivity : ICbeEntity
 {
     /// <summary>

@@ -8,6 +8,7 @@ internal class HttpCbeDataSource : ICbeDataSource
 {
     private const string LOGIN_URL = "https://kbopub.economie.fgov.be/kbo-open-data/static/j_spring_security_check";
     private const string INDEX_URL = "https://kbopub.economie.fgov.be/kbo-open-data/affiliation/xml/?files";
+    private const string FILE_URL = "https://kbopub.economie.fgov.be/kbo-open-data/affiliation/xml/";
 
     private readonly ICbeCredentialProvider _credentialProvider;
     private readonly HttpClient _httpClient;
@@ -49,7 +50,7 @@ internal class HttpCbeDataSource : ICbeDataSource
             .ToList();
 
         var result = hrefs
-            .Select(s => new CbeOpenDataFile("https://kbopub.economie.fgov.be/kbo-open-data/affiliation/xml/" + s))
+            .Select(s => new CbeOpenDataFile(s))
             .ToList();
 
         return result;
@@ -58,7 +59,7 @@ internal class HttpCbeDataSource : ICbeDataSource
     public async Task<Stream> ReadAsync(CbeOpenDataFile file, CancellationToken cancellationToken)
     {
         await EnsureLogin(cancellationToken);
-        return await _httpClient.GetStreamAsync(file.Source, cancellationToken);
+        return await _httpClient.GetStreamAsync(FILE_URL + file.Filename, cancellationToken);
     }
 
     private async Task EnsureLogin(CancellationToken cancellationToken)

@@ -1,7 +1,8 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
+using Vivarni.CBE.Sqlite;
 
-namespace Vivarni.CBE.Sqlite.Test.Fixtures;
+namespace Vivarni.CBE.Test.Fixtures;
 
 public class SqliteTestFixture : IDisposable
 {
@@ -11,7 +12,7 @@ public class SqliteTestFixture : IDisposable
 
     public SqliteTestFixture()
     {
-        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+        var loggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Information));
         var logger = loggerFactory.CreateLogger<SqliteCbeDataStorage>();
 
         // Use a temporary file database instead of in-memory to persist across connections

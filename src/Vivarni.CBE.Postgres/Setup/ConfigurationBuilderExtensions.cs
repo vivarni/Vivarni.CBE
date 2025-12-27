@@ -5,22 +5,22 @@ namespace Vivarni.CBE.Postgres.Setup;
 
 public static class ConfigurationBuilderExtensions
 {
-    public static VivarniCbeOptions UsePostgres(this VivarniCbeOptions builder, string connectionString, PostgresCbeOptions? opts = null)
+    public static CbeIntegrationOptions UsePostgres(this CbeIntegrationOptions options, string connectionString, PostgresCbeOptions? opts = null)
     {
-        builder.DataStorageFactory = (s) =>
+        options.DataStorageFactory = (s) =>
         {
             var logger = s.GetRequiredService<ILogger<PostgresCbeDataStorage>>();
             var storage = new PostgresCbeDataStorage(logger, connectionString, opts);
             return storage;
         };
 
-        builder.SynchronisationStateRegistryFactory = (s) =>
+        options.SynchronisationStateRegistryFactory = (s) =>
         {
             var logger = s.GetRequiredService<ILogger<PostgresCbeDataStorage>>();
             var storage = new PostgresCbeDataStorage(logger, connectionString, opts);
             return storage;
         };
 
-        return builder;
+        return options;
     }
 }

@@ -6,7 +6,7 @@ using Vivarni.CBE.DataSources;
 namespace Vivarni.CBE.Entities;
 
 [CsvFileMapping("contact")]
-[CbePrimaryKey(nameof(EntityNumber), nameof(EntityContact), nameof(ContactType), nameof(Value))]
+//[CbePrimaryKey(nameof(EntityNumber), nameof(EntityContact), nameof(ContactType), nameof(Value))]
 public class CbeContact : ICbeEntity
 {
     /// <summary>

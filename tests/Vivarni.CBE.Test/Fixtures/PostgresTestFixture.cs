@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Npgsql;
 using Testcontainers.PostgreSql;
+using Vivarni.CBE.Postgres;
 using Vivarni.CBE.Postgres.Setup;
 using Xunit;
 
-namespace Vivarni.CBE.Postgres.Test.Fixtures;
+namespace Vivarni.CBE.Test.Fixtures;
 
 public class PostgresTestFixture : IAsyncLifetime
 {
@@ -15,7 +16,7 @@ public class PostgresTestFixture : IAsyncLifetime
 
     public PostgresTestFixture()
     {
-        _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+        _loggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Information));
     }
 
     public async ValueTask InitializeAsync()
@@ -41,12 +42,4 @@ public class PostgresTestFixture : IAsyncLifetime
         var connectionString = _postgreSqlContainer.GetConnectionString();
         return new NpgsqlConnection(connectionString);
     }
-}
-
-[CollectionDefinition("PostgresCollection")]
-public class PostgresCollection : ICollectionFixture<PostgresTestFixture>
-{
-    // This class has no code, and is never created. Its purpose is simply
-    // to be the place to apply [CollectionDefinition] and all the
-    // ICollectionFixture<> interfaces.
 }
