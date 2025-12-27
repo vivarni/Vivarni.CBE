@@ -1,10 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Vivarni.CBE.Sqlite.Setup;
 
-namespace Vivarni.CBE.ConsoleSqlite;
+namespace Vivarni.CBE.Samples.SqliteDapper;
 
 internal class Program
 {
@@ -30,31 +29,15 @@ internal class Program
             var ftpPassword = configuration["cbe:ftp-password"] ?? string.Empty;
 
             var connectionString = GetConnectionString();
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog());
-
             var serviceProvider = new ServiceCollection()
-                // ------------------------------------------------------------------
-                // Boilerplate setup for an application using EF Core
-                //
-                .AddLogging(builder => builder.AddSerilog()) // This line remains unchanged
+                .AddLogging(builder => builder.AddSerilog())
                 .AddSingleton<IConfiguration>(configuration)
-                .AddSingleton(loggerFactory)
-                .AddDbContext<SearchDbContext>(o => o
-                    .UseSqlite(connectionString)
-                    .UseLoggerFactory(loggerFactory)
-                    .EnableSensitiveDataLogging())
                 .AddSingleton<SearchDemo>()
-
-                // ------------------------------------------------------------------
-                // The section configures Vivarni.CBE with the following:
-                // 
                 .AddVivarniCBE(s => s
                     .UseSqlite(connectionString)
                     //.UseHttpSource(httpUser, httpPassword)
                     .UseFtpsSource(ftpUser, ftpPassword)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
-
-                // ------------------------------------------------------------------
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();

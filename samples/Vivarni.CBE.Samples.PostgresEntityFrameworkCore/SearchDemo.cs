@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Vivarni.CBE.Entities;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using Vivarni.CBE.Samples.PostgresEntityFrameworkCore.DomainModels;
 
-namespace Vivarni.CBE.ConsoleSqlite;
+namespace Vivarni.CBE.Samples.PostgresEntityFrameworkCore;
 
 internal class SearchDemo
 {
@@ -40,18 +39,19 @@ internal class SearchDemo
         }
     }
 
-    private List<CbeEnterprise> SearchCompanies(string searchTerm)
+    private List<Enterprise> SearchCompanies(string searchTerm)
     {
-        return _ctx
-            .Set<CbeEnterprise>()
+        var companies = _ctx
+            .Set<Enterprise>()
             .Include(s => s.Denominations)
-            .Where(s => s.EnterpriseNumber == "0200.068.636")
-            .ToList();
+            .Where(s => s.Denominations.Any(d => d.Name.ToLower().Contains(searchTerm)));
+
+        return [.. companies];
     }
 
-    private static void DisplayCompany(CbeEnterprise enterprise)
+    private static void DisplayCompany(Enterprise enterprise)
     {
-        Console.WriteLine($"# {enterprise.Denominations.FirstOrDefault()?.Denomination}");
+        Console.WriteLine($"# {enterprise.Denominations.FirstOrDefault()?.Name}");
         Console.WriteLine($"  Enterprise #: {enterprise.EnterpriseNumber}");
         Console.WriteLine($"  Legal Form:   {enterprise.JuridicalSituation}");
 
