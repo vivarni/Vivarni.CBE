@@ -5,12 +5,15 @@ using Vivarni.CBE.DataStorage;
 
 namespace Vivarni.CBE;
 
+/// <summary>
+/// Extension methods for <see cref="IServiceCollection"/>, which allow registration of services for Vivarni CBE.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddVivarniCBE(this IServiceCollection services, Func<CbeIntegrationOptions, CbeIntegrationOptions> clientBuilder)
+    public static IServiceCollection AddVivarniCBE(this IServiceCollection services, Action<CbeIntegrationOptions> configureOptions)
     {
         var options = new CbeIntegrationOptions();
-        options = clientBuilder(options);
+        configureOptions(options);
 
         if (options.DataStorageFactory == null)
             throw new InvalidOperationException("Vivarni CBE: Missing data storage configuration.");
@@ -41,8 +44,8 @@ public static class ServiceCollectionExtensions
 public class CbeIntegrationOptions
 {
     // Data sources (HTTP/FTP + Caching)
-    public Func<IServiceProvider, ICbeDataSource>? DataSourceFactory { get; set; }
-    public Func<IServiceProvider, ICbeDataSourceCache>? DataSourceCacheFactory { get; set; }
+    internal Func<IServiceProvider, ICbeDataSource>? DataSourceFactory { get; set; }
+    internal Func<IServiceProvider, ICbeDataSourceCache>? DataSourceCacheFactory { get; set; }
 
     // Data storage (tables + synchronisation state)
     public Func<IServiceProvider, ICbeDataStorage>? DataStorageFactory { get; set; }
