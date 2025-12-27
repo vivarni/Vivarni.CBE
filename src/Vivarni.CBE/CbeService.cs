@@ -142,7 +142,7 @@ internal class CbeService : ICbeService
             .GetMethod(nameof(InsertCsvRecordsGeneric), BindingFlags.NonPublic | BindingFlags.Instance)!
             .MakeGenericMethod(type)!;
 
-        await (Task)method.Invoke(this, [zipEntry, truncateFirst])!;
+        await (Task)method.Invoke(this, [zipEntry, truncateFirst, cancellationToken])!;
     }
 
     private async Task InsertCsvRecordsGeneric<T>(ZipArchiveEntry zipEntry, bool truncateFirst, CancellationToken cancellationToken)
@@ -154,7 +154,7 @@ internal class CbeService : ICbeService
 
         if (truncateFirst)
         {
-            await _storage.ClearAsync<T>();
+            await _storage.ClearAsync<T>(cancellationToken);
             _logger.LogInformation("CBE sync: Cleared {CbeEntity}", typeof(T).Name);
         }
 
