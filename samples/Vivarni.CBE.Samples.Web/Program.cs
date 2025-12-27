@@ -3,9 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Vivarni.CBE.Samples.Common;
 using Vivarni.CBE.SqlServer.Setup;
 
-namespace Vivarni.CBE.Samples.ElasticSearch;
+namespace Vivarni.CBE.Samples.Web;
 
 internal class Program
 {
@@ -25,8 +26,8 @@ internal class Program
                 .AddUserSecrets<Program>()
                 .Build();
 
-            var ftpUser = configuration["cbe:ftp-login"] ?? string.Empty;
-            var ftpPassword = configuration["cbe:ftp-password"] ?? string.Empty;
+            var userName = configuration["cbe:http-login"] ?? string.Empty;
+            var password = configuration["cbe:http-password"] ?? string.Empty;
 
             var connectionString = configuration.GetConnectionString("sql")!;
             var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog());
@@ -41,21 +42,21 @@ internal class Program
                 .AddDbContext<SearchDbContext>(o => o
                     .UseSqlServer(connectionString)
                     .UseLoggerFactory(loggerFactory))
-                .AddSingleton<SearchDemo>()
+                .AddSingleton<ConsoleDemo>()
 
                 // ------------------------------------------------------------------
                 // Configure Vivarni.CBE
                 // 
                 .AddVivarniCBE(s => s
                     .UseSqlServer(connectionString, schema: SearchDbContext.SCHEMA_NAME)
-                    .UseFtpsSource(ftpUser, ftpPassword)
+                    .UseHttpSource(userName, password)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
 
                 // ------------------------------------------------------------------
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
-            var demo = serviceProvider.GetRequiredService<SearchDemo>();
+            var demo = serviceProvider.GetRequiredService<ConsoleDemo>();
 
             await cbe.UpdateCbeDataAsync();
             await demo.Run();

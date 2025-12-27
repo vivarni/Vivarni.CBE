@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vivarni.CBE.SqlServer\Vivarni.CBE.SqlServer.csproj" />
     <ProjectReference Include="..\..\src\Vivarni.CBE\Vivarni.CBE.csproj" />
+    <ProjectReference Include="..\Vivarni.CBE.Samples.Common\Vivarni.CBE.Samples.Common.csproj" />
   </ItemGroup>
 
 </Project>

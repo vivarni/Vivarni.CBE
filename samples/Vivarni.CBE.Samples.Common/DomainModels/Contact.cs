@@ -1,4 +1,4 @@
-﻿namespace Vivarni.CBE.Samples.ElasticSearch.DomainModels;
+﻿namespace Vivarni.CBE.Samples.Common.DomainModels;
 
 public class Contact
 {

@@ -1,4 +1,4 @@
-﻿namespace Vivarni.CBE.Samples.PostgresEntityFrameworkCore.DomainModels;
+﻿namespace Vivarni.CBE.Samples.Common.DomainModels;
 
 /// <summary>
 /// Represents an establishment unit (business unit) as defined in the KBO Open Data export. An

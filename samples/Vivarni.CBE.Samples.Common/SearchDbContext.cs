@@ -1,9 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace Vivarni.CBE.Samples.PostgresEntityFrameworkCore;
+namespace Vivarni.CBE.Samples.Common;
 
-
-internal class SearchDbContext : DbContext
+public class SearchDbContext : DbContext
 {
     public const string SCHEMA_NAME = "cbe";
 

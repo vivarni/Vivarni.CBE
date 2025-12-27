@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Vivarni.CBE.Samples.ElasticSearch.DomainModels;
+using Vivarni.CBE.Samples.Common;
+using Vivarni.CBE.Samples.Common.DomainModels;
 
-namespace Vivarni.CBE.Samples.ElasticSearch.DatabaseMappings;
+namespace Vivarni.CBE.Samples.Common.DatabaseMappings;
 
 internal class ContactConfiguration : IEntityTypeConfiguration<Contact>
 {

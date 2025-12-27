@@ -1,4 +1,4 @@
-﻿namespace Vivarni.CBE.Samples.PostgresEntityFrameworkCore.DomainModels;
+﻿namespace Vivarni.CBE.Samples.Common.DomainModels;
 
 public class Branch
 {

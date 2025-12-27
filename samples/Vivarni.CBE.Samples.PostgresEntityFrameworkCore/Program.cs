@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Vivarni.CBE.Postgres.Setup;
+using Vivarni.CBE.Samples.Common;
 
 namespace Vivarni.CBE.Samples.PostgresEntityFrameworkCore;
 
@@ -44,7 +45,7 @@ internal class Program
                 .AddDbContext<SearchDbContext>(o => o
                     .UseNpgsql(connectionString, x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
                     .UseLoggerFactory(loggerFactory))
-                .AddSingleton<SearchDemo>()
+                .AddSingleton<ConsoleDemo>()
 
                 // ------------------------------------------------------------------
                 // Configure Vivarni.CBE
@@ -59,7 +60,7 @@ internal class Program
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
-            var demo = serviceProvider.GetRequiredService<SearchDemo>();
+            var demo = serviceProvider.GetRequiredService<ConsoleDemo>();
 
             await cbe.UpdateCbeDataAsync();
             await demo.Run();
