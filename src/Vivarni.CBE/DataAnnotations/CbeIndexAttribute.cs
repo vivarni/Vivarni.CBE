@@ -1,4 +1,6 @@
-﻿namespace Vivarni.CBE.DataAnnotations;
+﻿using Vivarni.CBE.DataStorage;
+
+namespace Vivarni.CBE.DataAnnotations;
 
 /// <summary>
 /// Indicates that this column should be indexed in a relational database (frequent lookups).
