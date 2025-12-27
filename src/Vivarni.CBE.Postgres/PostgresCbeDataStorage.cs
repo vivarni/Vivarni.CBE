@@ -225,11 +225,11 @@ internal class PostgresCbeDataStorage
 
     public async Task<int> GetCurrentExtractNumber(CancellationToken cancellationToken = default)
     {
-        var tableName = $"{_schema}.{_tablePrefix}StateRegistry";
+        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + "StateRegistry");
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
         await using var command = conn.CreateCommand();
-        command.CommandText = $"SELECT \"Value\" FROM {tableName} WHERE \"Variable\" = @Variable";
+        command.CommandText = $"SELECT value FROM {_schema}.{tableName} WHERE variable = @Variable";
         command.Parameters.AddWithValue("@Variable", SYNC_EXTRACT_NUMBER_VARIABLE);
         var result = await command.ExecuteScalarAsync(cancellationToken);
         if (result == null || result == DBNull.Value)
@@ -239,15 +239,15 @@ internal class PostgresCbeDataStorage
         return -1;
     }
 
-    public async Task SetCurrentExtractNumber(int extractNumber, CancellationToken cancellationToken)
+    public async Task SetCurrentExtractNumber(int extractNumber, CancellationToken cancellationToken = default)
     {
-        var tableName = $"{_schema}.{_tablePrefix}StateRegistry";
+        var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + "StateRegistry");
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
         await using var command = conn.CreateCommand();
         command.CommandText = $@"
-            INSERT INTO {tableName} (\"Variable\", \"Value\") VALUES (@Variable, @Value)
-            ON CONFLICT (\"Variable\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";";
+            INSERT INTO {tableName} (variable, value) VALUES (@Variable, @Value)
+            ON CONFLICT (Variable) DO UPDATE SET Value = @Value";
         command.Parameters.AddWithValue("@Variable", SYNC_EXTRACT_NUMBER_VARIABLE);
         command.Parameters.AddWithValue("@Value", extractNumber.ToString());
         await command.ExecuteNonQueryAsync(cancellationToken);

@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Vivarni.CBE.DataSources;
 using Xunit;
 
-namespace Vivarni.CBE.Test.DataSources;
+namespace Vivarni.CBE.Test;
 
 public class CbeDataSourceProxyTests
 {
@@ -46,10 +44,10 @@ public class CbeDataSourceProxyTests
         _cache.Setup(c => c.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(cacheFiles);
 
-        var proxy = new CbeDataSourceProxy(_logger, _upstream.Object, _cache.Object);
+        var sut = new CbeDataSourceProxy(_logger, _upstream.Object, _cache.Object);
 
         // Act
-        var result = await proxy.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
+        var result = await sut.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, result.Count); // Should deduplicate
@@ -70,10 +68,10 @@ public class CbeDataSourceProxyTests
         _upstream.Setup(s => s.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(sourceFiles);
 
-        var proxy = new CbeDataSourceProxy(_logger, _upstream.Object, null);
+        var sut = new CbeDataSourceProxy(_logger, _upstream.Object, null);
 
         // Act
-        var result = await proxy.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
+        var result = await sut.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Single(result);
@@ -92,10 +90,10 @@ public class CbeDataSourceProxyTests
         _cache.Setup(c => c.GetOpenDataFilesAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(cacheFiles);
 
-        var proxy = new CbeDataSourceProxy(_logger, null, _cache.Object);
+        var sut = new CbeDataSourceProxy(_logger, null, _cache.Object);
 
         // Act
-        var result = await proxy.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
+        var result = await sut.GetOpenDataFilesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Single(result);

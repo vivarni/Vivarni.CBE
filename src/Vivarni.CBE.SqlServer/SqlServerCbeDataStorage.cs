@@ -198,8 +198,12 @@ internal class SqlServerCbeDataStorage
         command.CommandText = $"SELECT [Value] FROM {tableName} WHERE [Variable] = '{SYNC_PROCESSED_FILES_VARIABLE}'";
 
         await conn.OpenAsync(cancellationToken);
-        var x = await command.ExecuteScalarAsync(cancellationToken);
-        return (x as int?) ?? -1;
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        if (result == null || result == DBNull.Value)
+            return -1;
+        if (int.TryParse(result.ToString(), out var value))
+            return value;
+        return -1;
     }
 
     public async Task SetCurrentExtractNumber(int extractNumber, CancellationToken cancellationToken)

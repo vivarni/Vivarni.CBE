@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using Testcontainers.Oracle;
+using Vivarni.CBE.Oracle;
 using Vivarni.CBE.Oracle.Setup;
 using Xunit;
 
-namespace Vivarni.CBE.Oracle.Test.Fixtures;
+namespace Vivarni.CBE.Test.Fixtures;
 
 public class OracleTestFixture : IAsyncLifetime
 {
@@ -16,7 +17,7 @@ public class OracleTestFixture : IAsyncLifetime
 
     public OracleTestFixture()
     {
-        _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+        _loggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Information));
     }
 
     public async ValueTask InitializeAsync()
@@ -42,12 +43,4 @@ public class OracleTestFixture : IAsyncLifetime
         var connectionString = _oracleContainer.GetConnectionString();
         return new OracleConnection(connectionString);
     }
-}
-
-[CollectionDefinition("OracleCollection")]
-public class OracleCollection : ICollectionFixture<OracleTestFixture>
-{
-    // This class has no code, and is never created. Its purpose is simply
-    // to be the place to apply [CollectionDefinition] and all the
-    // ICollectionFixture<> interfaces.
 }

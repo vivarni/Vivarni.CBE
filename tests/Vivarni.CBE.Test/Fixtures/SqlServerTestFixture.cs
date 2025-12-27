@@ -1,9 +1,10 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Testcontainers.MsSql;
+using Vivarni.CBE.SqlServer;
 using Xunit;
 
-namespace Vivarni.CBE.SqlServer.Test.Fixtures;
+namespace Vivarni.CBE.Test.Fixtures;
 
 public class SqlServerTestFixture : IAsyncLifetime
 {
@@ -15,7 +16,7 @@ public class SqlServerTestFixture : IAsyncLifetime
 
     public SqlServerTestFixture()
     {
-        _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+        _loggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Information));
     }
 
     public async ValueTask InitializeAsync()
@@ -43,12 +44,4 @@ public class SqlServerTestFixture : IAsyncLifetime
         var connectionString = _sqlServerContainer.GetConnectionString();
         return new SqlConnection(connectionString);
     }
-}
-
-[CollectionDefinition("SqlServerCollection")]
-public class SqlServerCollection : ICollectionFixture<SqlServerTestFixture>
-{
-    // This class has no code, and is never created. Its purpose is simply
-    // to be the place to apply [CollectionDefinition] and all the
-    // ICollectionFixture<> interfaces.
 }

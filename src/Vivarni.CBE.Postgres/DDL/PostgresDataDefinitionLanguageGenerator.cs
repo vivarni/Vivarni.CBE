@@ -42,9 +42,7 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
             var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(PostgresDatabaseObjectNameProvider.GetObjectName);
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{tableName} (");
-            var columnDefinitions = new List<string>();
-            // Add ID column as the first column, auto-incrementing
-            columnDefinitions.Add($"    {idColumnName} SERIAL PRIMARY KEY");
+            var columnDefinitions = new List<string> { $"    {idColumnName} SERIAL PRIMARY KEY" };
             foreach (var prop in properties)
             {
                 var columnName = PostgresDatabaseObjectNameProvider.GetObjectName(prop.Name);

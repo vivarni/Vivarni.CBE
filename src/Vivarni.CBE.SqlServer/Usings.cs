@@ -1,1 +1,1 @@
-﻿[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Vivarni.CBE.SqlServer.Test")]
+﻿[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Vivarni.CBE.Test")]
