@@ -7,7 +7,6 @@ using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.SqlServer.DDL;
 using Vivarni.CBE.SqlServer.Util;
-using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.SqlServer;
 
@@ -54,7 +53,7 @@ internal class SqlServerCbeDataStorage
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
 
-        foreach (var batch in entities.Batch(INSERT_BATCH_SIZE))
+        foreach (var batch in entities.Chunk(INSERT_BATCH_SIZE))
         {
             var dataTable = batch.ToDataTable();
             if (dataTable.Rows.Count <= 0)

@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.Samples.PostgresEntityFrameworkCore.DomainModels;
 
 namespace Vivarni.CBE.Samples.PostgresEntityFrameworkCore.DatabaseMappings;

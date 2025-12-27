@@ -1,12 +1,10 @@
 ﻿using System.Data;
 using System.Reflection;
-using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.Sqlite.DDL;
-using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.Sqlite;
 
@@ -43,7 +41,7 @@ internal class SqliteCbeDataStorage
         var parameterNames = properties.Select(p => $"@{p.Name}");
         var insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnNames)}) VALUES ({string.Join(", ", parameterNames)})";
 
-        foreach (var batch in entities.Batch(INSERT_BATCH_SIZE))
+        foreach (var batch in entities.Chunk(INSERT_BATCH_SIZE))
         {
             using var transaction = connection.BeginTransaction();
             using var command = connection.CreateCommand();

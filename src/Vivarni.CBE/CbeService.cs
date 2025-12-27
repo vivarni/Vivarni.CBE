@@ -7,7 +7,6 @@ using CsvHelper;
 using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
-using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE;
 
@@ -185,7 +184,7 @@ internal class CbeService : ICbeService
         var deleteCountActual = 0;
         var deleteOnMatchingProperty = mapping[0];
 
-        foreach (var batch in csv.GetRecords<dynamic>().Batch(1000))
+        foreach (var batch in csv.GetRecords<dynamic>().Chunk(1000))
         {
             var method = typeof(ICbeDataStorage)
                 .GetMethod(nameof(ICbeDataStorage.RemoveAsync), BindingFlags.Public | BindingFlags.Instance)!

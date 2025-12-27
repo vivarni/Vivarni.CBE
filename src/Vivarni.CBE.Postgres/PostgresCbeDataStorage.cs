@@ -1,13 +1,11 @@
 ﻿using System.Data;
 using System.Reflection;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.Postgres.DDL;
 using Vivarni.CBE.Postgres.Setup;
-using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.Postgres;
 
@@ -62,7 +60,7 @@ internal class PostgresCbeDataStorage
         await connection.OpenAsync(cancellationToken);
 
         // Process in streaming fashion to avoid loading all data into memory
-        foreach (var batch in entities.Batch(_batchSize))
+        foreach (var batch in entities.Chunk(_batchSize))
         {
             var batchList = batch.ToList();
             if (batchList.Count <= 0)
