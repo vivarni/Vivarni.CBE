@@ -1,10 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using Vivarni.CBE.Sqlite.Setup;
 
-namespace Vivarni.CBE.ConsoleSqlite;
+namespace Vivarni.CBE.Samples.SqliteDapper;
 
 internal class Program
 {

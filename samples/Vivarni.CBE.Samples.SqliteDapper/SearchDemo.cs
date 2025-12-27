@@ -2,7 +2,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 
-namespace Vivarni.CBE.ConsoleSqlite;
+namespace Vivarni.CBE.Samples.SqliteDapper;
 
 internal class SearchDemo
 {

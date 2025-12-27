@@ -6,7 +6,7 @@ using Vivarni.CBE.Postgres.Setup;
 using Vivarni.CBE.Sqlite.DDL;
 using Vivarni.CBE.SqlServer.DDL;
 
-namespace Vivarni.CBE.ConsoleDDL;
+namespace Vivarni.CBE.Samples.ConsoleDDL;
 
 internal class Program
 {

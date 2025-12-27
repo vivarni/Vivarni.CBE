@@ -246,7 +246,7 @@ internal class PostgresCbeDataStorage
         await conn.OpenAsync(cancellationToken);
         await using var command = conn.CreateCommand();
         command.CommandText = $@"
-            INSERT INTO {tableName} (variable, value) VALUES (@Variable, @Value)
+            INSERT INTO {_schema}.{tableName} (variable, value) VALUES (@Variable, @Value)
             ON CONFLICT (Variable) DO UPDATE SET Value = @Value";
         command.Parameters.AddWithValue("@Variable", SYNC_EXTRACT_NUMBER_VARIABLE);
         command.Parameters.AddWithValue("@Value", extractNumber.ToString());
