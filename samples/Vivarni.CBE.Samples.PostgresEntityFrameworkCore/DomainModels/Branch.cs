@@ -18,5 +18,6 @@ public class Branch
     /// </summary>
     public string EnterpriseNumber { get; set; }
 
+    public ICollection<Address> Addresses { get; set; }
     public ICollection<Denomination> Denominations { get; set; }
 }

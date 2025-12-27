@@ -46,6 +46,7 @@ public class Enterprise
     public DateOnly StartDate { get; set; }
 
     public ICollection<Contact> Contacts { get; set; }
+    public ICollection<Address> Addresses { get; set; }
     public ICollection<Activity> Activities { get; set; }
     public ICollection<Branch> Branches { get; set; }
     public ICollection<Establishment> Establishments { get; set; }

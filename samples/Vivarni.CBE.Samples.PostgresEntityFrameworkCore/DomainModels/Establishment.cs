@@ -23,6 +23,7 @@ public class Establishment
     public string EnterpriseNumber { get; set; }
 
     public ICollection<Contact> Contacts { get; set; }
+    public ICollection<Address> Addresses { get; set; }
     public ICollection<Activity> Activities { get; set; }
     public ICollection<Denomination> Denominations { get; set; }
 }

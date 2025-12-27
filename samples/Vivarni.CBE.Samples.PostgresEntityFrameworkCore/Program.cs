@@ -42,7 +42,7 @@ internal class Program
                 .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton(loggerFactory)
                 .AddDbContext<SearchDbContext>(o => o
-                    .UseNpgsql(connectionString)
+                    .UseNpgsql(connectionString, x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
                     .UseLoggerFactory(loggerFactory))
                 .AddSingleton<SearchDemo>()
 
@@ -51,8 +51,8 @@ internal class Program
                 // 
                 .AddVivarniCBE(s => s
                     .UsePostgres(connectionString, new() { Schema = SearchDbContext.SCHEMA_NAME, BinaryImporterBatchSize = 2_500_000 })
-                    //.UseHttpSource(httpUser, httpPassword)
-                    .UseFtpsSource(ftpUser, ftpPassword)
+                    .UseHttpSource(httpUser, httpPassword)
+                    //.UseFtpsSource(ftpUser, ftpPassword)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
 
                 // ------------------------------------------------------------------

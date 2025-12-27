@@ -25,5 +25,9 @@ internal class EstablishmentConfiguration : IEntityTypeConfiguration<Establishme
         builder.HasMany(e => e.Denominations)
             .WithOne()
             .HasForeignKey(d => d.EntityNumber);
+
+        builder.HasMany(e => e.Addresses)
+            .WithOne()
+            .HasForeignKey(e => e.EntityNumber);
     }
 }

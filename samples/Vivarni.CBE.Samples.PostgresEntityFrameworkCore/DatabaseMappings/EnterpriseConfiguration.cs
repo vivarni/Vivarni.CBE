@@ -38,5 +38,9 @@ internal class EnterpriseConfiguration : IEntityTypeConfiguration<Enterprise>
         builder.HasMany(e => e.Activities)
             .WithOne()
             .HasForeignKey(e => e.EntityNumber);
+
+        builder.HasMany(e => e.Addresses)
+            .WithOne()
+            .HasForeignKey(e => e.EntityNumber);
     }
 }

@@ -14,8 +14,13 @@ internal class BranchConfiguration : IEntityTypeConfiguration<Branch>
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.StartDate).HasColumnName("start_date");
         builder.Property(e => e.EnterpriseNumber).HasColumnName("enterprise_number");
+
         builder.HasMany(e => e.Denominations)
             .WithOne()
             .HasForeignKey(d => d.EntityNumber);
+
+        builder.HasMany(e => e.Addresses)
+            .WithOne()
+            .HasForeignKey(e => e.EntityNumber);
     }
 }
