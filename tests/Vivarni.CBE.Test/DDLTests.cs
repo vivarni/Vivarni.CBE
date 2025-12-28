@@ -52,7 +52,7 @@ public class DDLTests
     public void SqlServerDataDefinitionLanguageGenerator_ShouldCreateIndices()
     {
         // Arrange
-        var generator = new SqlServerDataDefinitionLanguageGenerator("dbo", "");
+        var generator = new SqlServerDataDefinitionLanguageGenerator(new());
         var sampleIndices = new[]
         {
             "IX_CbeBranch_EnterpriseNumber",

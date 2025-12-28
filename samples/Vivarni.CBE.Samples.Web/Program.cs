@@ -48,7 +48,7 @@ internal class Program
                 // Configure Vivarni.CBE
                 // 
                 .AddVivarniCBE(s => s
-                    .UseSqlServer(connectionString, schema: SearchDbContext.SCHEMA_NAME)
+                    .UseSqlServer(connectionString, new() { Schema = SearchDbContext.SCHEMA_NAME })
                     .UseHttpSource(userName, password)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
 

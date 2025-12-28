@@ -36,7 +36,7 @@ public class SqlServerTestFixture : IAsyncLifetime
     {
         var logger = _loggerFactory.CreateLogger<SqlServerCbeDataStorage>();
         var connectionString = _sqlServerContainer.GetConnectionString();
-        return new SqlServerCbeDataStorage(logger, connectionString, schema, tablePrefix);
+        return new SqlServerCbeDataStorage(logger, connectionString, new() { Schema = schema, TablePrefix = tablePrefix });
     }
 
     internal SqlConnection NewDbConnection()

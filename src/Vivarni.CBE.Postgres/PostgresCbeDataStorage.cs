@@ -51,7 +51,9 @@ internal class PostgresCbeDataStorage
         var tableName = PostgresDatabaseObjectNameProvider.GetObjectName(_tablePrefix + typeof(T).Name);
 
         // Pre-compile property accessors for better performance
-        var properties = typeof(T).GetProperties();
+        var properties = typeof(T)
+            .GetProperties()
+            .Where(s => s.Name != nameof(ICbeEntity.CbeId));
         var columnNames = properties.Select(p => PostgresDatabaseObjectNameProvider.GetObjectName(p.Name)).ToList();
         var copyCommand = $"COPY {_schema}.{tableName} ({string.Join(", ", columnNames)}) FROM STDIN (FORMAT BINARY)";
 

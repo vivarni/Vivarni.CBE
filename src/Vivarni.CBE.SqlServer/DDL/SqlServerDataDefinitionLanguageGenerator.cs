@@ -12,10 +12,10 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
     private readonly string _schema;
     private readonly string _tablePrefix;
 
-    public SqlServerDataDefinitionLanguageGenerator(string schema, string tablePrefix)
+    public SqlServerDataDefinitionLanguageGenerator(SqlServerCbeOptions opts)
     {
-        _schema = SqlServerDatabaseObjectNameProvider.GetObjectName(schema);
-        _tablePrefix = tablePrefix;
+        _schema = SqlServerDatabaseObjectNameProvider.GetObjectName(opts.Schema);
+        _tablePrefix = opts.TablePrefix;
     }
 
     public string GenerateDDL()
@@ -43,12 +43,14 @@ public class SqlServerDataDefinitionLanguageGenerator : IDataDefinitionLanguageG
 
             sb.AppendLine($"IF OBJECT_ID('{_schema}.{tableName}', 'U') IS NULL\nBEGIN");
             sb.AppendLine($"CREATE TABLE [{_schema}].[{tableName}] (");
-            sb.AppendLine($"    [{idColumnName}] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,");
 
             foreach (var prop in properties)
             {
                 var columnName = prop.Name;
-                var sqlType = GetSqlType(prop);
+                var sqlType = prop.Name == nameof(ICbeEntity.CbeId)
+                    ? "INT IDENTITY(1,1) NOT NULL PRIMARY KEY"
+                    : GetSqlType(prop);
+
                 sb.AppendLine($"    [{columnName}] {sqlType},");
 
                 // Check for IndexColumn attribute and collect index statements

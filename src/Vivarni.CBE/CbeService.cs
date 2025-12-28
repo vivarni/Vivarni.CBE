@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using CsvHelper;
+using CsvHelper.Configuration;
 using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
@@ -202,7 +203,8 @@ internal class CbeService : ICbeService
 
     private static CsvReader CreateCsvReader(StreamReader sr)
     {
-        var csvReader = new CsvReader(sr, CultureInfo.InvariantCulture);
+        var configuration = new CsvConfiguration(CultureInfo.InvariantCulture);
+        var csvReader = new CsvReader(sr, configuration);
         csvReader.Context.TypeConverterCache.AddConverter<DateOnly>(new DateOnlyConverter());
         csvReader.Context.TypeConverterCache.AddConverter<DateOnly?>(new DateOnlyConverter());
 

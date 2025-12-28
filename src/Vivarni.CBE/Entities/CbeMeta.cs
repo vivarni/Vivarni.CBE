@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration.Attributes;
 using Vivarni.CBE.DataSources;
 
 #pragma warning disable CS8618
@@ -10,9 +11,11 @@ namespace Vivarni.CBE.Entities;
 /// dataset, such as version, creation date, and other metadata variables.
 /// </summary>
 [CsvFileMapping("meta")]
-[CbePrimaryKey(nameof(Variable))]
 public class CbeMeta : ICbeEntity
 {
+    [Ignore]
+    public long CbeId { get; set; }
+
     /// <summary>
     /// The name of the metadata variable (e.g., 'Version', 'CreationDate', etc.).
     /// </summary>

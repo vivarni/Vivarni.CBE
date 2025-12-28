@@ -4,6 +4,7 @@ using Vivarni.CBE.Oracle.Setup;
 using Vivarni.CBE.Postgres.DDL;
 using Vivarni.CBE.Postgres.Setup;
 using Vivarni.CBE.Sqlite.DDL;
+using Vivarni.CBE.SqlServer;
 using Vivarni.CBE.SqlServer.DDL;
 
 namespace Vivarni.CBE.Samples.ConsoleDDL;
@@ -31,7 +32,7 @@ internal class Program
     {
         yield return ("Sqlite", new SqliteDataDefinitionLanguageGenerator());
         yield return ("Postgres", new PostgresDataDefinitionLanguageGenerator(new PostgresCbeOptions()));
-        yield return ("SqlServer", new SqlServerDataDefinitionLanguageGenerator("dbo", "Vivarni"));
+        yield return ("SqlServer", new SqlServerDataDefinitionLanguageGenerator(new SqlServerCbeOptions()));
         yield return ("Oracle", new OracleDataDefinitionLanguageGenerator(new OracleCbeOptions()));
     }
 }
