@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Vivarni.CBE.Samples.Common;
 using Vivarni.CBE.Samples.Common.DomainModels;
 
 namespace Vivarni.CBE.Samples.Common.DatabaseMappings;
@@ -18,10 +17,10 @@ internal class BranchConfiguration : IEntityTypeConfiguration<Branch>
 
         builder.HasMany(e => e.Denominations)
             .WithOne()
-            .HasForeignKey(d => d.EntityNumber);
+            .HasForeignKey("entity_number");
 
         builder.HasMany(e => e.Addresses)
             .WithOne()
-            .HasForeignKey(e => e.EntityNumber);
+            .HasForeignKey("entity_number");
     }
 }

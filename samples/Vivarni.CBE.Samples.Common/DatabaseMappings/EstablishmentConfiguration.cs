@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Vivarni.CBE.Samples.Common;
 using Vivarni.CBE.Samples.Common.DomainModels;
 
 namespace Vivarni.CBE.Samples.Common.DatabaseMappings;
@@ -17,18 +16,18 @@ internal class EstablishmentConfiguration : IEntityTypeConfiguration<Establishme
         builder.Property(e => e.EnterpriseNumber).HasColumnName("enterprise_number");
         builder.HasMany(e => e.Contacts)
             .WithOne()
-            .HasForeignKey(c => c.EntityNumber);
+            .HasForeignKey("entity_number");
 
         builder.HasMany(e => e.Activities)
             .WithOne()
-            .HasForeignKey(a => a.EntityNumber);
+            .HasForeignKey("entity_number");
 
         builder.HasMany(e => e.Denominations)
             .WithOne()
-            .HasForeignKey(d => d.EntityNumber);
+            .HasForeignKey("entity_number");
 
         builder.HasMany(e => e.Addresses)
             .WithOne()
-            .HasForeignKey(e => e.EntityNumber);
+            .HasForeignKey("entity_number");
     }
 }

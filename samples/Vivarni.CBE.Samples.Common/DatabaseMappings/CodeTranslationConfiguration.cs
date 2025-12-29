@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Vivarni.CBE.Samples.Common;
 using Vivarni.CBE.Samples.Common.DomainModels;
 
 namespace Vivarni.CBE.Samples.Common.DatabaseMappings;
@@ -10,9 +9,9 @@ internal class CodeTranslationConfiguration : IEntityTypeConfiguration<CodeTrans
     public void Configure(EntityTypeBuilder<CodeTranslation> builder)
     {
         builder.ToTable("cbe_code", SearchDbContext.SCHEMA_NAME);
-        builder.HasKey(e => e.Id);
+        builder.Property<long>("cbe_id");
+        builder.HasKey("cbe_id");
 
-        builder.Property(e => e.Id).HasColumnName("cbe_id");
         builder.Property(e => e.Category).HasColumnName("category");
         builder.Property(e => e.Code).HasColumnName("code");
         builder.Property(e => e.Language).HasColumnName("language");

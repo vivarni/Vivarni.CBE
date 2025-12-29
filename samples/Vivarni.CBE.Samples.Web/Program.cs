@@ -3,8 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Vivarni.CBE.Postgres.Setup;
 using Vivarni.CBE.Samples.Common;
-using Vivarni.CBE.SqlServer.Setup;
 
 namespace Vivarni.CBE.Samples.Web;
 
@@ -29,7 +29,7 @@ internal class Program
             var userName = configuration["cbe:http-login"] ?? string.Empty;
             var password = configuration["cbe:http-password"] ?? string.Empty;
 
-            var connectionString = configuration.GetConnectionString("sql")!;
+            var connectionString = configuration.GetConnectionString("postgres")!;
             var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog());
 
             var serviceProvider = new ServiceCollection()
@@ -39,16 +39,17 @@ internal class Program
                 .AddLogging(builder => builder.AddSerilog()) // This line remains unchanged
                 .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton(loggerFactory)
+                .AddScoped<IElasticRepository, ElasticRepository>()
                 .AddDbContext<SearchDbContext>(o => o
-                    .UseSqlServer(connectionString)
+                    .UseNpgsql(connectionString)
                     .UseLoggerFactory(loggerFactory))
-                .AddSingleton<ConsoleDemo>()
+                .AddSingleton<ElasticDemo>()
 
                 // ------------------------------------------------------------------
                 // Configure Vivarni.CBE
                 // 
                 .AddVivarniCBE(s => s
-                    .UseSqlServer(connectionString, new() { Schema = SearchDbContext.SCHEMA_NAME })
+                    .UsePostgres(connectionString, new() { Schema = SearchDbContext.SCHEMA_NAME })
                     .UseHttpSource(userName, password)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
 
@@ -56,9 +57,11 @@ internal class Program
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
-            var demo = serviceProvider.GetRequiredService<ConsoleDemo>();
+            var demo = serviceProvider.GetRequiredService<ElasticDemo>();
+            var elastic = serviceProvider.GetRequiredService<IElasticRepository>();
 
-            await cbe.UpdateCbeDataAsync();
+            //await cbe.UpdateCbeDataAsync();
+            //await elastic.ReindexAllEnterprisesAsync();
             await demo.Run();
         }
         catch (Exception ex)

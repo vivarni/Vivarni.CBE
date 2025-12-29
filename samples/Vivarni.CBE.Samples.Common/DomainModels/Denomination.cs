@@ -2,13 +2,6 @@
 
 public class Denomination
 {
-    public long Id { get; set; }
-
-    /// <summary>
-    /// The establishment unit or enterprise number.
-    /// </summary>
-    public string EntityNumber { get; set; }
-
     /// <summary>
     /// Language of the name. See code table (category=language).
     /// </summary>

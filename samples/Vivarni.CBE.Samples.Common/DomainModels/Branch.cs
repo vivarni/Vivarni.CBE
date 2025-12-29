@@ -2,10 +2,6 @@
 
 public class Branch
 {
-    /// <summary>
-    /// The id can be used to identify a branch office.
-    /// This identifier is not an official number! It cannot be used for any search in another public CBE search.
-    /// </summary>
     public string Id { get; set; }
 
     /// <summary>

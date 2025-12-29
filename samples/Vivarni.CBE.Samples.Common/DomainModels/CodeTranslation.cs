@@ -5,8 +5,6 @@
 /// </summary>
 public class CodeTranslation
 {
-    public long Id { get; set; }
-
     /// <summary>
     /// Indicates which "code table" is involved. The value in category corresponds to the value
     /// specified in the following chapters in the code table column.
