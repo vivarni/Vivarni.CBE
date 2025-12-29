@@ -2,7 +2,6 @@
 using Elastic.Clients.Elasticsearch.IndexManagement;
 using Elastic.Clients.Elasticsearch.Mapping;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Vivarni.CBE.Samples.Common;
 using Vivarni.CBE.Samples.Common.DomainModels;
 
@@ -86,6 +85,8 @@ public class ElasticRepository : IElasticRepository
                 break;
 
             done += page.Count;
+            var pct = done / total;
+            IndexationProgressService.UpdateElasticProgress(pct);
             var bulkResponse = await _elasticClient.BulkAsync(b => b
                     .Index("cbe")
                     .IndexMany(page));
@@ -93,7 +94,7 @@ public class ElasticRepository : IElasticRepository
             if (!bulkResponse.IsValidResponse)
                 _logger.LogError("Bulk upload failed. Debug information: {debugInfo}", bulkResponse.DebugInformation);
             else
-                _logger.LogInformation("Indexed {count:N0} documents. Progress: {progress:P2}", done, done / total);
+                _logger.LogInformation("Indexed {count:N0} documents. Progress: {progress:P2}", done, pct);
 
             pageIndex++;
         }

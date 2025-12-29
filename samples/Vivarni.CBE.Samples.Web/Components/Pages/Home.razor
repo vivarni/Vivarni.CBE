@@ -3,6 +3,7 @@
 @using Vivarni.CBE.Samples.Common.DomainModels
 @rendermode InteractiveServer
 @inject Vivarni.CBE.Samples.Web.Elastic.IElasticRepository ElasticRepository
+@inject Vivarni.CBE.Samples.Web.Elastic.IndexationProgressService ProgressService
 @inject Microsoft.Extensions.Logging.ILogger<Home> Logger
 
 <PageTitle>CBE with Elasticsearch in Blazor</PageTitle>
