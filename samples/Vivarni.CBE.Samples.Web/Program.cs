@@ -58,10 +58,11 @@ internal class Program
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
             var demo = serviceProvider.GetRequiredService<ElasticDemo>();
-            var elastic = serviceProvider.GetRequiredService<IElasticRepository>();
+            var repository = serviceProvider.GetRequiredService<IElasticRepository>();
 
             //await cbe.UpdateCbeDataAsync();
-            //await elastic.ReindexAllEnterprisesAsync();
+            //await repository.ReindexAllEnterprisesAsync();
+            //await repository.ReindexEnterpriseAsync("0735.770.635");
             await demo.Run();
         }
         catch (Exception ex)

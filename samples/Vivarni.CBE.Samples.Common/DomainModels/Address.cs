@@ -61,15 +61,4 @@ public class Address
     /// Date of striking off.
     /// </summary>
     public DateOnly? DateStrikingOff { get; set; }
-
-    public override string ToString()
-    {
-        var str =
-            CountryNL ?? "BE" + "\n" +
-            Zipcode + " " + MunicipalityNL + "\n" + 
-            StreetNL + " " + HouseNumber + " " + Box + "\n" +
-            ExtraAddressInfo;
-
-        return str.Trim();
-    }
 }

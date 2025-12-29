@@ -11,6 +11,7 @@ namespace Vivarni.CBE.Samples.Web;
 public interface IElasticRepository
 {
     Task ReindexAllEnterprisesAsync(CancellationToken cancellationToken = default);
+    Task ReindexEnterpriseAsync(string v);
     Task<List<Enterprise>> SearchAsync(string input);
 }
 
@@ -74,10 +75,12 @@ public class ElasticRepository : IElasticRepository
 
         while (true)
         {
-            var page = await query
+            var page = query
                 .Skip(pageIndex * PAGE_SIZE)
                 .Take(PAGE_SIZE)
-                .ToListAsync(cancellationToken);
+                .ToList()
+                .Select(s => new ElasticDoc(s))
+                .ToList();
 
             if (page.Count == 0)
                 break;
@@ -96,23 +99,17 @@ public class ElasticRepository : IElasticRepository
         }
     }
 
-    private async Task<(IQueryable<ElasticDoc> query, double total)> GetDataQuery()
+    private async Task<(IQueryable<Enterprise> query, double total)> GetDataQuery()
     {
         var query = _context.Set<Enterprise>()
             .AsNoTracking()
             .AsSplitQuery()
-            .OrderBy(e => e.EnterpriseNumber)
-            .Select(s => new ElasticDoc()
-            {
-                EnterpriseNumber = s.EnterpriseNumber,
-                Type = s.TypeOfEnterprise,
-                JuridicalForm = s.JuridicalForm,
-                Denominations = s.Denominations.Select(s => s.Name),
-                Addresses = s.Addresses.Select(s => s.ToString())
-            });
+            .Include(s => s.Addresses)
+            .Include(s => s.Denominations)
+            .OrderBy(e => e.EnterpriseNumber);
 
         var total = (double)_context.Set<Enterprise>().Count();
-        _logger.LogInformation("Counted {num:N0} total number of records", total);
+        _logger.LogInformation("Found {num:N0} enterprises to reindex...", total);
 
         return (query, total);
     }
@@ -144,23 +141,16 @@ public class ElasticRepository : IElasticRepository
             throw new Exception("Failed to create index: " + indexResponse.ElasticsearchServerError?.ToString());
         }
     }
-}
 
+    public async Task ReindexEnterpriseAsync(string enterpriseNumber)
+    {
+        var (query, total) = await GetDataQuery();
 
-public class ElasticDoc
-{
-    public string EnterpriseNumber { get; set; }
+        var enterprise = query.SingleOrDefault(s => s.EnterpriseNumber == enterpriseNumber);
+        if (enterprise == null)
+            return;
 
-    /// <summary>
-    /// The type of enterprise (e.g., 'Legal entity', 'Natural person').
-    /// </summary>
-    public char Type { get; set; }
-
-    /// <summary>
-    /// The legal form of the entity, if it is a legal entity. See code table. (Examples: 'NV', 'BVBA', etc.)
-    /// </summary>
-    public string? JuridicalForm { get; set; }
-
-    public IEnumerable<string> Denominations { get; set; }
-    public IEnumerable<string> Addresses { get; set; }
+        var doc = new ElasticDoc(enterprise);
+        _elasticClient.Index(doc);
+    }
 }
