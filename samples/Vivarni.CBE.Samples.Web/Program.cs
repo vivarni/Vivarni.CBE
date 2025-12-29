@@ -1,77 +1,82 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using Vivarni.CBE.Postgres.Setup;
 using Vivarni.CBE.Samples.Common;
+using Vivarni.CBE.Samples.Web.Components;
+using Vivarni.CBE.Samples.Web.Elastic;
 
-namespace Vivarni.CBE.Samples.Web;
-
-internal class Program
+namespace Vivarni.CBE.Samples.Web
 {
-    public static async Task Main()
+    public static class Program
     {
-        // Configure Serilog for minimal output
-        Log.Logger = new LoggerConfiguration()
-            .WriteTo.Console()
-            .MinimumLevel.Debug()
-            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
-            .CreateLogger();
-
-        try
+        public static void Main(string[] args)
         {
-            var configuration = new ConfigurationBuilder()
-                .AddJsonFile($"appsettings.json", true, true)
-                .AddUserSecrets<Program>()
-                .Build();
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .Enrich.WithProperty("InstanceId", Guid.NewGuid().ToString("n"))
+                .WriteTo.Console()
+                .CreateLogger();
 
-            var userName = configuration["cbe:http-login"] ?? string.Empty;
-            var password = configuration["cbe:http-password"] ?? string.Empty;
+            try
+            {
+                var builder = WebApplication.CreateBuilder(args);
 
-            var connectionString = configuration.GetConnectionString("postgres")!;
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog());
+                // Replace Microsoft.Extensions.Logging providers with Serilog
+                builder.Host.UseSerilog((ctx, services, cfg) => cfg
+                    .ReadFrom.Configuration(ctx.Configuration)
+                    .ReadFrom.Services(services)
+                    .Enrich.WithProperty("InstanceId", Guid.NewGuid().ToString("n"))
+                    .WriteTo.Console()
+                );
 
-            var serviceProvider = new ServiceCollection()
+                var connectionString = builder.Configuration.GetConnectionString("postgres")!;
+                var userName = builder.Configuration["cbe:http-login"] ?? string.Empty;
+                var password = builder.Configuration["cbe:http-password"] ?? string.Empty;
+
                 // ------------------------------------------------------------------
-                // Boilerplate setup for an application using EF Core
-                //
-                .AddLogging(builder => builder.AddSerilog()) // This line remains unchanged
-                .AddSingleton<IConfiguration>(configuration)
-                .AddSingleton(loggerFactory)
-                .AddScoped<IElasticRepository, ElasticRepository>()
-                .AddDbContext<SearchDbContext>(o => o
-                    .UseNpgsql(connectionString)
-                    .UseLoggerFactory(loggerFactory))
-                .AddSingleton<ElasticDemo>()
+                // Add services to the container.
+                builder.Services
+                    .AddScoped<IElasticRepository, ElasticRepository>()
+                    .AddDbContext<SearchDbContext>(o => o.UseNpgsql(connectionString))
+                    .AddRazorComponents()
+                        .AddInteractiveServerComponents();
 
                 // ------------------------------------------------------------------
                 // Configure Vivarni.CBE
-                // 
-                .AddVivarniCBE(s => s
+                builder.Services.AddVivarniCBE(s => s
                     .UsePostgres(connectionString, new() { Schema = SearchDbContext.SCHEMA_NAME })
                     .UseHttpSource(userName, password)
-                    .UseFileSystemCache("c:/temp/kbo-cache"))
+                    .UseFileSystemCache("c:/temp/kbo-cache"));
 
-                // ------------------------------------------------------------------
-                .BuildServiceProvider();
+                var app = builder.Build();
 
-            var cbe = serviceProvider.GetRequiredService<ICbeService>();
-            var demo = serviceProvider.GetRequiredService<ElasticDemo>();
-            var repository = serviceProvider.GetRequiredService<IElasticRepository>();
+                if (!app.Environment.IsDevelopment())
+                {
+                    app.UseExceptionHandler("/Error");
+                    app.UseHsts();
+                }
 
-            //await cbe.UpdateCbeDataAsync();
-            //await repository.ReindexAllEnterprisesAsync();
-            //await repository.ReindexEnterpriseAsync("0735.770.635");
-            await demo.Run();
-        }
-        catch (Exception ex)
-        {
-            Log.Fatal(ex, "Application terminated unexpectedly");
-        }
-        finally
-        {
-            Log.CloseAndFlush();
+                // Optional: structured request logging
+                app.UseSerilogRequestLogging();
+
+                app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+                app.UseHttpsRedirection();
+                app.UseAntiforgery();
+
+                app.MapStaticAssets();
+                app.MapRazorComponents<App>()
+                    .AddInteractiveServerRenderMode();
+
+                app.Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Application terminated unexpectedly");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }

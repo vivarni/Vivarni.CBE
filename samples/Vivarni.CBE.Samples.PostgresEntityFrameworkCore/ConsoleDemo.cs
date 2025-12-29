@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Vivarni.CBE.Samples.Common;
 using Vivarni.CBE.Samples.Common.DomainModels;
 
-namespace Vivarni.CBE.Samples.Common;
+namespace Vivarni.CBE.Samples.PostgresEntityFrameworkCore;
 
 public class ConsoleDemo
 {

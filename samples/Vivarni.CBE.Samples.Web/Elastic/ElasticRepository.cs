@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Vivarni.CBE.Samples.Common;
 using Vivarni.CBE.Samples.Common.DomainModels;
 
-namespace Vivarni.CBE.Samples.Web;
+namespace Vivarni.CBE.Samples.Web.Elastic;
 
 public interface IElasticRepository
 {

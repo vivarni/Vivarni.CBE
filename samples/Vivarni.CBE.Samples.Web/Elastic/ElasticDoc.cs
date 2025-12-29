@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Vivarni.CBE.Samples.Common.DomainModels;
 
-namespace Vivarni.CBE.Samples.Web;
+namespace Vivarni.CBE.Samples.Web.Elastic;
 
 public class ElasticDoc
 {
