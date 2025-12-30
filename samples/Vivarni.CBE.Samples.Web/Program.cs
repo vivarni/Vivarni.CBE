@@ -25,7 +25,6 @@ public static class Program
             builder.Host.UseSerilog((ctx, services, cfg) => cfg
                 .ReadFrom.Configuration(ctx.Configuration)
                 .ReadFrom.Services(services)
-                .Enrich.WithProperty("InstanceId", Guid.NewGuid().ToString("n"))
                 .WriteTo.Console()
             );
 

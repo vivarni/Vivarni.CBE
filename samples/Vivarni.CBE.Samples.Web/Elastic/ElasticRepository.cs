@@ -10,7 +10,7 @@ namespace Vivarni.CBE.Samples.Web.Elastic;
 public interface IElasticRepository
 {
     Task ReindexAllEnterprisesAsync(CancellationToken cancellationToken = default);
-    Task ReindexEnterpriseAsync(string v);
+    Task ReindexEnterpriseAsync(string enterpriseNumber);
     Task<List<Enterprise>> SearchAsync(string input);
 }
 
@@ -139,13 +139,13 @@ public class ElasticRepository : IElasticRepository
         var indexResponse = await _elasticClient.Indices.CreateAsync(createIndexRequest, cancellationToken);
         if (!indexResponse.IsValidResponse)
         {
-            throw new Exception("Failed to create index: " + indexResponse.ElasticsearchServerError?.ToString());
+            throw new Exception("Failed to create index: " + indexResponse.ElasticsearchServerError);
         }
     }
 
     public async Task ReindexEnterpriseAsync(string enterpriseNumber)
     {
-        var (query, total) = await GetDataQuery();
+        var (query, _) = await GetDataQuery();
 
         var enterprise = query.SingleOrDefault(s => s.EnterpriseNumber == enterpriseNumber);
         if (enterprise == null)

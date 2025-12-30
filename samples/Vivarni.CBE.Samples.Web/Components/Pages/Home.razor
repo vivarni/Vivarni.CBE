@@ -8,6 +8,7 @@
 
 <PageTitle>CBE with Elasticsearch in Blazor</PageTitle>
 
+<h1>Kruispuntbank Search</h1>
 <input @bind-Value="SearchInput"
        @bind-Value:event="oninput"
        placeholder="Enter search term..."
@@ -102,12 +103,5 @@ else if (SearchResults is not null)
         {
             Logger.LogError(ex, "Error during debounced search.");
         }
-    }
-
-    // Clean up CTS on component disposal
-    public void Dispose()
-    {
-        _debounceCts?.Cancel();
-        _debounceCts?.Dispose();
     }
 }
