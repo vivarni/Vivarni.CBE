@@ -35,8 +35,8 @@ internal class Program
                 .AddSingleton<SearchDemo>()
                 .AddVivarniCBE(s => s
                     .UseSqlite(connectionString)
-                    //.UseHttpSource(httpUser, httpPassword)
-                    .UseFtpsSource(ftpUser, ftpPassword)
+                    .UseHttpSource(httpUser, httpPassword)
+                    //.UseFtpsSource(ftpUser, ftpPassword)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
                 .BuildServiceProvider();
 

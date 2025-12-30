@@ -1,13 +1,11 @@
 ﻿using System.Data;
 using System.Reflection;
-using System.Text.Json;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.SqlServer.DDL;
 using Vivarni.CBE.SqlServer.Util;
-using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.SqlServer;
 
@@ -16,8 +14,7 @@ internal class SqlServerCbeDataStorage
     , ICbeStateRegistry
 {
     private const string SYNC_PROCESSED_FILES_VARIABLE = "SyncProcessedFiles";
-    private const int INSERT_BATCH_SIZE = 100_000;
-    private static readonly JsonSerializerOptions s_jsonSettings = new() { WriteIndented = true };
+    private readonly int _batchSize;
 
     private readonly string _connectionString;
     private readonly string _schema;
@@ -25,13 +22,16 @@ internal class SqlServerCbeDataStorage
     private readonly ILogger _logger;
     private readonly SqlServerDataDefinitionLanguageGenerator _ddl;
 
-    public SqlServerCbeDataStorage(ILogger<SqlServerCbeDataStorage> logger, string connectionString, string schema, string tablePrefix)
+    public SqlServerCbeDataStorage(ILogger<SqlServerCbeDataStorage> logger, string connectionString, SqlServerCbeOptions? opts = null)
     {
+        opts ??= new();
+
         _logger = logger;
         _connectionString = connectionString;
-        _schema = schema;
-        _tablePrefix = tablePrefix;
-        _ddl = new(schema, tablePrefix);
+        _schema = opts.Schema;
+        _tablePrefix = opts.TablePrefix;
+        _batchSize = opts.BulkCopyBatchSize;
+        _ddl = new(opts);
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -54,7 +54,7 @@ internal class SqlServerCbeDataStorage
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
 
-        foreach (var batch in entities.Batch(INSERT_BATCH_SIZE))
+        foreach (var batch in entities.Chunk(_batchSize))
         {
             var dataTable = batch.ToDataTable();
             if (dataTable.Rows.Count <= 0)

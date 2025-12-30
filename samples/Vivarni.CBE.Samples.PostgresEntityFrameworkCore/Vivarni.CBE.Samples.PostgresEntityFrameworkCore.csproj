@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
@@ -21,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vivarni.CBE.Postgres\Vivarni.CBE.Postgres.csproj" />
     <ProjectReference Include="..\..\src\Vivarni.CBE\Vivarni.CBE.csproj" />
+    <ProjectReference Include="..\Vivarni.CBE.Samples.Common\Vivarni.CBE.Samples.Common.csproj" />
   </ItemGroup>
 
 </Project>

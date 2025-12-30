@@ -71,12 +71,14 @@ public class OracleDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
             sb.AppendLine($"        EXECUTE IMMEDIATE 'CREATE TABLE {tableName} (");
 
             var columnDefinitions = new List<string>();
-            // Add ID column as the first column, auto-incrementing
-            columnDefinitions.Add($"            {idColumnName} NUMBER(10) GENERATED ALWAYS AS IDENTITY PRIMARY KEY");
+
             foreach (var prop in properties)
             {
                 var columnName = OracleDatabaseObjectNameProvider.GetObjectName(prop.Name);
-                var sqlType = GetOracleType(prop);
+                var sqlType = prop.Name == nameof(ICbeEntity.CbeId)
+                    ? "NUMBER(10) GENERATED ALWAYS AS IDENTITY PRIMARY KEY"
+                    : GetOracleType(prop);
+
                 columnDefinitions.Add($"            {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements

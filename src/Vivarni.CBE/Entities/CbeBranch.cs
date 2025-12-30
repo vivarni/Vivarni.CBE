@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration.Attributes;
 using Vivarni.CBE.DataSources;
 
 #pragma warning disable CS8618
@@ -6,9 +7,11 @@ using Vivarni.CBE.DataSources;
 namespace Vivarni.CBE.Entities;
 
 [CsvFileMapping("branch")]
-[CbePrimaryKey(nameof(Id))]
 public class CbeBranch : ICbeEntity
 {
+    [Ignore]
+    public long CbeId { get; set; }
+
     /// <summary>
     /// The id can be used to identify a branch office.
     /// This identifier is not an official number! It cannot be used for any search in another public CBE search.

@@ -3,8 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Core;
 using Vivarni.CBE.Postgres.Setup;
+using Vivarni.CBE.Samples.Common;
 
 namespace Vivarni.CBE.Samples.PostgresEntityFrameworkCore;
 
@@ -43,24 +43,24 @@ internal class Program
                 .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton(loggerFactory)
                 .AddDbContext<SearchDbContext>(o => o
-                    .UseNpgsql(connectionString)
+                    .UseNpgsql(connectionString, x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
                     .UseLoggerFactory(loggerFactory))
-                .AddSingleton<SearchDemo>()
+                .AddSingleton<ConsoleDemo>()
 
                 // ------------------------------------------------------------------
                 // Configure Vivarni.CBE
                 // 
                 .AddVivarniCBE(s => s
                     .UsePostgres(connectionString, new() { Schema = SearchDbContext.SCHEMA_NAME, BinaryImporterBatchSize = 2_500_000 })
-                    //.UseHttpSource(httpUser, httpPassword)
-                    .UseFtpsSource(ftpUser, ftpPassword)
+                    .UseHttpSource(httpUser, httpPassword)
+                    //.UseFtpsSource(ftpUser, ftpPassword)
                     .UseFileSystemCache("c:/temp/kbo-cache"))
 
                 // ------------------------------------------------------------------
                 .BuildServiceProvider();
 
             var cbe = serviceProvider.GetRequiredService<ICbeService>();
-            var demo = serviceProvider.GetRequiredService<SearchDemo>();
+            var demo = serviceProvider.GetRequiredService<ConsoleDemo>();
 
             await cbe.UpdateCbeDataAsync();
             await demo.Run();

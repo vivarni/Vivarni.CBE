@@ -4,10 +4,10 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using CsvHelper;
+using CsvHelper.Configuration;
 using Microsoft.Extensions.Logging;
 using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
-using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE;
 
@@ -185,7 +185,7 @@ internal class CbeService : ICbeService
         var deleteCountActual = 0;
         var deleteOnMatchingProperty = mapping[0];
 
-        foreach (var batch in csv.GetRecords<dynamic>().Batch(1000))
+        foreach (var batch in csv.GetRecords<dynamic>().Chunk(1000))
         {
             var method = typeof(ICbeDataStorage)
                 .GetMethod(nameof(ICbeDataStorage.RemoveAsync), BindingFlags.Public | BindingFlags.Instance)!
@@ -203,7 +203,8 @@ internal class CbeService : ICbeService
 
     private static CsvReader CreateCsvReader(StreamReader sr)
     {
-        var csvReader = new CsvReader(sr, CultureInfo.InvariantCulture);
+        var configuration = new CsvConfiguration(CultureInfo.InvariantCulture);
+        var csvReader = new CsvReader(sr, configuration);
         csvReader.Context.TypeConverterCache.AddConverter<DateOnly>(new DateOnlyConverter());
         csvReader.Context.TypeConverterCache.AddConverter<DateOnly?>(new DateOnlyConverter());
 

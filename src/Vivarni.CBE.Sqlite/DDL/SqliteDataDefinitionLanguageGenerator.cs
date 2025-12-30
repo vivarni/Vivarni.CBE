@@ -25,18 +25,17 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
             var idColumnName = SqliteDatabaseObjectNameProvider.GetObjectName("CbeId");
             var properties = type.GetProperties();
             var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(SqliteDatabaseObjectNameProvider.GetObjectName);
+            var columnDefinitions = new List<string>();
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName} (");
 
-
-
-            var columnDefinitions = new List<string>();
-            // Add ID column as the first column, auto-incrementing
-            columnDefinitions.Add($"    {idColumnName} INTEGER PRIMARY KEY AUTOINCREMENT");
             foreach (var prop in properties)
             {
                 var columnName = SqliteDatabaseObjectNameProvider.GetObjectName(prop.Name);
-                var sqlType = GetSqliteType(prop);
+                var sqlType = prop.Name == nameof(ICbeEntity.CbeId)
+                    ? "INTEGER PRIMARY KEY AUTOINCREMENT"
+                    : GetSqliteType(prop);
+
                 columnDefinitions.Add($"    {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements
@@ -47,6 +46,7 @@ public class SqliteDataDefinitionLanguageGenerator : IDataDefinitionLanguageGene
                     indexStatements.Add(indexStatement);
                 }
             }
+
             sb.AppendLine(string.Join(",\n", columnDefinitions));
             sb.AppendLine(");");
             sb.AppendLine();

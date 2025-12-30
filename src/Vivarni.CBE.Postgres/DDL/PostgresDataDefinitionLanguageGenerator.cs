@@ -40,13 +40,15 @@ public class PostgresDataDefinitionLanguageGenerator : IDataDefinitionLanguageGe
             var idColumnName = PostgresDatabaseObjectNameProvider.GetObjectName("CbeId");
             var properties = type.GetProperties();
             var primaryKeyColumns = type.GetCustomAttribute<CbePrimaryKeyAttribute>()?.PropertyNames.Select(PostgresDatabaseObjectNameProvider.GetObjectName);
+            var columnDefinitions = new List<string>();
 
             sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_schema}.{tableName} (");
-            var columnDefinitions = new List<string> { $"    {idColumnName} SERIAL PRIMARY KEY" };
             foreach (var prop in properties)
             {
                 var columnName = PostgresDatabaseObjectNameProvider.GetObjectName(prop.Name);
-                var sqlType = GetSqlType(prop);
+                var sqlType = prop.Name == nameof(ICbeEntity.CbeId)
+                    ? "BIGSERIAL PRIMARY KEY"
+                    : GetSqlType(prop);
                 columnDefinitions.Add($"    {columnName} {sqlType}");
 
                 // Check for IndexColumn attribute and collect index statements

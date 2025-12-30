@@ -6,7 +6,6 @@ using Vivarni.CBE.DataSources;
 using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.Oracle.DDL;
 using Vivarni.CBE.Oracle.Setup;
-using Vivarni.CBE.Util;
 
 namespace Vivarni.CBE.Oracle;
 
@@ -59,7 +58,7 @@ internal class OracleCbeDataStorage
         var parameterNames = properties.Select(p => $":{p.Name}");
         var insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnNames)}) VALUES ({string.Join(", ", parameterNames)})";
 
-        foreach (var batch in entities.Batch(_batchSize))
+        foreach (var batch in entities.Chunk(_batchSize))
         {
             using var transaction = connection.BeginTransaction();
 

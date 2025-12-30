@@ -8,7 +8,7 @@ internal class HttpCbeDataSource : ICbeDataSource
 {
     private const string LOGIN_URL = "https://kbopub.economie.fgov.be/kbo-open-data/static/j_spring_security_check";
     private const string INDEX_URL = "https://kbopub.economie.fgov.be/kbo-open-data/affiliation/xml/?files";
-    private const string FILE_URL = "https://kbopub.economie.fgov.be/kbo-open-data/affiliation/xml/";
+    private const string FILE_URL = "https://kbopub.economie.fgov.be/kbo-open-data/affiliation/xml/files/";
 
     private readonly ICbeCredentialProvider _credentialProvider;
     private readonly HttpClient _httpClient;
@@ -60,6 +60,7 @@ internal class HttpCbeDataSource : ICbeDataSource
     {
         await EnsureLogin(cancellationToken);
         return await _httpClient.GetStreamAsync(FILE_URL + file.Filename, cancellationToken);
+        // GET https://kbopub.economie.fgov.be/kbo-open-data/affiliation/xml/files/KboOpenData_0193_2025_11_26_Update.zip
     }
 
     private async Task EnsureLogin(CancellationToken cancellationToken)

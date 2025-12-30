@@ -1,0 +1,20 @@
+﻿namespace Vivarni.CBE.Samples.Common.DomainModels;
+
+public class Contact
+{
+    /// <summary>
+    /// Indicates for which type of entity this is a contact detail: enterprise, branch, or establishment
+    /// unit. See code table.
+    /// </summary>
+    public string EntityContact { get; set; }
+
+    /// <summary>
+    /// Indicates the type of contact detail: phone number, email, or web address. See code table.
+    /// </summary>
+    public string ContactType { get; set; }
+
+    /// <summary>
+    /// The contact detail: phone number, email, or web address.
+    /// </summary>
+    public string Value { get; set; }
+}

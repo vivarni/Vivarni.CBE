@@ -1,0 +1,107 @@
+﻿@page "/"
+@using System.Diagnostics
+@using Vivarni.CBE.Samples.Common.DomainModels
+@rendermode InteractiveServer
+@inject Vivarni.CBE.Samples.Web.Elastic.IElasticRepository ElasticRepository
+@inject Vivarni.CBE.Samples.Web.Elastic.IndexationProgressService ProgressService
+@inject Microsoft.Extensions.Logging.ILogger<Home> Logger
+
+<PageTitle>CBE with Elasticsearch in Blazor</PageTitle>
+
+<h1>Kruispuntbank Search</h1>
+<input @bind-Value="SearchInput"
+       @bind-Value:event="oninput"
+       placeholder="Enter search term..."
+       style="width:100%" />
+
+<div style=" text-align:right">
+    <small style="color:gray;">Found @(SearchResults?.Count ?? '-') results in @(ElapsedTime ?? '-') ms</small>
+</div>
+<hr />
+
+@if (SearchResults is not null && SearchResults.Any())
+{
+    <div>
+        @foreach (var result in SearchResults)
+        {
+            <div style="margin-bottom:1em">
+                <h5>@result.EnterpriseNumber - @result.Denominations.FirstOrDefault()?.Name</h5>
+                @foreach (var address in result.Addresses)
+                {
+                    <div>@(address.CountryNL ?? "België")</div>
+                    <div>@address.Zipcode @address.MunicipalityNL</div>
+                    <div>@address.StreetNL @address.HouseNumber @address.Box</div>
+                }
+            </div>
+        }
+    </div>
+}
+else if (SearchResults is not null)
+{
+    <p>No results found.</p>
+}
+
+@code {
+    private long? ElapsedTime;
+
+    private string? _searchInput;
+    public string? SearchInput
+    {
+        get => _searchInput;
+        set
+        {
+            _searchInput = value;
+            DebounceSearch();
+        }
+    }
+
+    public List<Enterprise>? SearchResults { get; set; } = null;
+
+    // Optional: minimum length to reduce unnecessary calls (tweak or remove as you wish)
+    private const int MinSearchLength = 1;
+
+    // Debounce support
+    private CancellationTokenSource? _debounceCts;
+    private static readonly TimeSpan DebounceDelay = TimeSpan.FromMilliseconds(250);
+
+    private async void DebounceSearch()
+    {
+        // Cancel previous scheduled search if any
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
+
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        try
+        {
+            // Wait for the debounce window
+            await Task.Delay(DebounceDelay, token);
+
+            // If input is empty or below threshold, clear results and UI
+            if (string.IsNullOrWhiteSpace(SearchInput) || SearchInput.Length < MinSearchLength)
+            {
+                SearchResults = null;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+
+            // Perform the search
+            var sw = Stopwatch.StartNew();
+            var results = await ElasticRepository.SearchAsync(SearchInput);
+            SearchResults = results?.ToList() ?? [];
+            ElapsedTime = sw.ElapsedMilliseconds;
+
+            // Trigger UI update
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+            // Swallow—this is expected when the user keeps typing
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during debounced search.");
+        }
+    }
+}

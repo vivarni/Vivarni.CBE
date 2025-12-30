@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration.Attributes;
 using Vivarni.CBE.DataSources;
 
 #pragma warning disable CS8618
@@ -6,9 +7,11 @@ using Vivarni.CBE.DataSources;
 namespace Vivarni.CBE.Entities;
 
 [CsvFileMapping("address")]
-[CbePrimaryKey(nameof(EntityNumber), nameof(TypeOfAddress))]
 public class CbeAddress : ICbeEntity
 {
+    [Ignore]
+    public long CbeId { get; set; }
+
     /// <summary>
     /// The establishment unit or enterprise number.
     /// </summary>

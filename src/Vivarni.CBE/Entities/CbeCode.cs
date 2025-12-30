@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration.Attributes;
 using Vivarni.CBE.DataSources;
 
 #pragma warning disable CS8618
@@ -9,9 +10,11 @@ namespace Vivarni.CBE.Entities;
 /// Description of codes that are used in other CBE entities.
 /// </summary>
 [CsvFileMapping("code")]
-[CbePrimaryKey(nameof(Code), nameof(Language), nameof(Category))]
 public class CbeCode : ICbeEntity
 {
+    [Ignore]
+    public long CbeId { get; set; }
+
     /// <summary>
     /// Indicates which "code table" is involved. The value in category corresponds to the value
     /// specified in the following chapters in the code table column.

@@ -1,5 +1,4 @@
-﻿using SQLitePCL;
-using Vivarni.CBE.DataStorage;
+﻿using Vivarni.CBE.DataStorage;
 using Vivarni.CBE.Test.Fixtures;
 using Vivarni.CBE.Test.TheoryDataProviders;
 using Xunit;

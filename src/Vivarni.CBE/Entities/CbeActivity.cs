@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration.Attributes;
 using Vivarni.CBE.DataSources;
 
 #pragma warning disable CS8618
@@ -9,6 +10,9 @@ namespace Vivarni.CBE.Entities;
 //[CbePrimaryKey(nameof(EntityNumber), nameof(NaceVersion), nameof(NaceCode), nameof(Classification), nameof(ActivityGroup))]
 public class CbeActivity : ICbeEntity
 {
+    [Ignore]
+    public long CbeId { get; set; }
+
     /// <summary>
     /// The establishment unit or enterprise number.
     /// </summary>

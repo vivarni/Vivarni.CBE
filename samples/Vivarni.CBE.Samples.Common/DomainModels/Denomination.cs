@@ -1,0 +1,20 @@
+﻿namespace Vivarni.CBE.Samples.Common.DomainModels;
+
+public class Denomination
+{
+    /// <summary>
+    /// Language of the name. See code table (category=language).
+    /// </summary>
+    public byte Language { get; set; }
+
+    /// <summary>
+    /// Type of name. See code table.
+    /// </summary>
+    public string TypeOfDenomination { get; set; }
+
+    /// <summary>
+    /// The name of the entity, branch, or establishment unit.
+    /// </summary>
+    public string Name { get; set; }
+}
+

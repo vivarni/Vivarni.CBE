@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration.Attributes;
 using Vivarni.CBE.DataSources;
 
 #pragma warning disable CS8618
@@ -11,9 +12,11 @@ namespace Vivarni.CBE.Entities;
 /// out.
 /// </summary>
 [CsvFileMapping("establishment")]
-[CbePrimaryKey(nameof(EstablishmentNumber))]
 public class CbeEstablishment : ICbeEntity
 {
+    [Ignore]
+    public long CbeId { get; set; }
+
     /// <summary>
     /// Unique identifier for the establishment (business unit) as registered in the KBO.
     /// </summary>
