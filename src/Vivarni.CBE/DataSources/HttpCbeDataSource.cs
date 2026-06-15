@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using Vivarni.CBE.DataSources.Security;
 
 namespace Vivarni.CBE.DataSources;
@@ -35,12 +36,14 @@ internal class HttpCbeDataSource : ICbeDataSource
 
         var indexResponse = (await _httpClient.GetAsync(INDEX_URL, cancellationToken)).EnsureSuccessStatusCode();
         var html = await indexResponse.Content.ReadAsStringAsync(cancellationToken);
+        if (html.Contains("j_password"))
+            throw new Exception("Failed to login to KBO. HTML seems to be have changed, not sure what is going on...");
 
         // Extract href attributes from anchor tags using Regex (no external libs)
         // Matches: <a ... href="value" ...> or single-quoted
-        var hrefRegex = new System.Text.RegularExpressions.Regex(
+        var hrefRegex = new Regex(
             "<a[^>]*href\\s*=\\s*\"(files/.+\\.zip)\"|<a[^>]*href\\s*=\\s*'(files/.+\\.zip)'",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         var matches = hrefRegex.Matches(html);
         var hrefs = matches
@@ -69,7 +72,7 @@ internal class HttpCbeDataSource : ICbeDataSource
             return;
 
         var (username, password) = await _credentialProvider.GetCredentials(cancellationToken);
-        if (username == null || password == null)
+        if (string.IsNullOrWhiteSpace(username) || password == null || password.Length == 0)
             throw new Exception("Cannot proceed because the username and/or password is empty!");
 
         var formContent = new FormUrlEncodedContent(
@@ -80,6 +83,22 @@ internal class HttpCbeDataSource : ICbeDataSource
 
         var loginResponse = await _httpClient.PostAsync(LOGIN_URL, formContent, cancellationToken);
         loginResponse.EnsureSuccessStatusCode();
+
+        var responseHtml = await loginResponse.Content.ReadAsStringAsync(cancellationToken);
+        var errorRegex = new Regex("<div[^>]+class=['\"]errors['\"][^>]*>(.*?)<\\/div>", RegexOptions.Singleline);
+        var matches = errorRegex.Matches(responseHtml);
+        if (matches.Count > 0)
+        {
+            var errorMessage = Regex
+                .Replace(matches[0].Value, "<.*?>", String.Empty)
+                .Trim()
+                .TrimEnd('.')
+                .Trim();
+
+            if (errorMessage.Contains("Your login attempt was not successful"))
+                throw new Exception("Failed to login to KBO: " + errorMessage);
+        }
+
         _isLoggedIn = true;
     }
 }
